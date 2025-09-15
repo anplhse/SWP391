@@ -1,5 +1,6 @@
 import React from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function CustomerDashboard() {
+  const navigate = useNavigate();
   // Get user from localStorage (demo)
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -73,15 +75,27 @@ export default function CustomerDashboard() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Button variant="electric" className="h-20 flex-col space-y-2">
+          <Button 
+            variant="electric" 
+            className="h-20 flex-col space-y-2"
+            onClick={() => navigate('/customer/booking')}
+          >
             <Plus className="w-6 h-6" />
             <span>Đặt lịch bảo dưỡng</span>
           </Button>
-          <Button variant="outline" className="h-20 flex-col space-y-2">
+          <Button 
+            variant="outline" 
+            className="h-20 flex-col space-y-2"
+            onClick={() => navigate('/customer/packages')}
+          >
             <Car className="w-6 h-6" />
-            <span>Quản lý xe</span>
+            <span>Gói dịch vụ</span>
           </Button>
-          <Button variant="outline" className="h-20 flex-col space-y-2">
+          <Button 
+            variant="outline" 
+            className="h-20 flex-col space-y-2"
+            onClick={() => navigate('/customer/history')}
+          >
             <History className="w-6 h-6" />
             <span>Lịch sử dịch vụ</span>
           </Button>

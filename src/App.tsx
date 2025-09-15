@@ -6,6 +6,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import CustomerDashboard from "./pages/customer/CustomerDashboard";
+import BookingPage from "./pages/customer/BookingPage";
+import ServicePackagesPage from "./pages/customer/ServicePackagesPage";
+import ServiceHistoryPage from "./pages/customer/ServiceHistoryPage";
 import StaffDashboard from "./pages/service/StaffDashboard";
 import TechnicianDashboard from "./pages/service/TechnicianDashboard";
 import AdminDashboard from "./pages/service/AdminDashboard";
@@ -23,6 +26,9 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/customer" element={<CustomerDashboard />} />
+          <Route path="/customer/booking" element={<BookingPage />} />
+          <Route path="/customer/packages" element={<ServicePackagesPage />} />
+          <Route path="/customer/history" element={<ServiceHistoryPage />} />
           <Route path="/service/staff" element={<StaffDashboard />} />
           <Route path="/service/technician" element={<TechnicianDashboard />} />
           <Route path="/service/admin" element={<AdminDashboard />} />
