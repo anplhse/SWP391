@@ -157,8 +157,10 @@ class ApiClient {
   }
 
   async logout(): Promise<void> {
+    const refreshToken = localStorage.getItem('refreshToken');
     return this.request<void>('/auth/logout', {
       method: 'POST',
+      body: JSON.stringify({ refreshToken }),
     });
   }
 
