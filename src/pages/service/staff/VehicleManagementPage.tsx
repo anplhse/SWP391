@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -177,14 +177,74 @@ export default function VehicleManagementPage() {
     setIsDialogOpen(false);
   };
 
+  // Map staff vehicles to VehicleTable shape (customer table shape)
+  const tableVehicles = useMemo(() => {
+    const mapStatus = (s: Vehicle['status']): 'healthy' | 'warning' | 'critical' => {
+      switch (s) {
+        case 'active':
+          return 'healthy';
+        case 'maintenance':
+          return 'warning';
+        case 'warning':
+        default:
+          return 'warning';
+      }
+    };
+    return vehicles.map((v) => ({
+      id: v.id,
+      name: `${v.brand} ${v.model}`,
+      plate: v.licensePlate,
+      model: v.model,
+      year: v.year,
+      battery: 100,
+      nextService: v.nextService,
+      status: mapStatus(v.status),
+      mileage: v.mileage,
+      color: 'Trắng',
+      vin: `STAFF-${v.licensePlate}`,
+      purchaseDate: v.lastService,
+    }));
+  }, [vehicles]);
 
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Quản lý xe (Staff)</h1>
+          <p className="text-muted-foreground">Xem và quản trị toàn bộ xe trong hệ thống</p>
+        </div>
+        <Button onClick={handleAddVehicle}>Thêm xe mới</Button>
+      </div>
+
       <VehicleTable
-        vehicles={vehicles}
-        onEdit={handleEditVehicle}
+        mode="staff"
+        vehicles={vehicles.map(v => ({
+          id: v.id,
+          name: `${v.brand} ${v.model}`,
+          plate: v.licensePlate,
+          model: v.model,
+          year: v.year,
+          battery: 100,
+          nextService: v.nextService,
+          status: v.status === 'active' ? 'healthy' : 'warning',
+          mileage: v.mileage,
+          color: 'Trắng',
+          vin: `STAFF-${v.licensePlate}`,
+          purchaseDate: v.lastService,
+          owner: v.owner,
+          ownerPhone: v.ownerPhone,
+          lastService: v.lastService,
+        }))}
+        onEdit={(veh) => {
+          const found = vehicles.find(x => x.id === veh.id);
+          if (found) handleEditVehicle(found);
+        }}
         onDelete={handleDeleteVehicle}
-        onAdd={handleAddVehicle}
+        onView={(vehicleId) => {
+          const found = vehicles.find(x => x.id === vehicleId);
+          if (found) handleEditVehicle(found);
+        }}
         showActions={true}
       />
 

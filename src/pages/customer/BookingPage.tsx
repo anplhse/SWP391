@@ -7,7 +7,7 @@ const services: Service[] = [
     name: 'Bảo dưỡng định kỳ',
     description: 'Thay dầu, lọc dầu, kiểm tra hệ thống',
     price: 500000,
-    duration: '2 giờ',
+    duration: 120,
     compatibleVehicles: ['VF5', 'VF8', 'VF9', 'VFE34'],
     category: 'maintenance'
   },
@@ -16,7 +16,7 @@ const services: Service[] = [
     name: 'Kiểm tra phanh',
     description: 'Kiểm tra hệ thống phanh, thay thế nếu cần',
     price: 300000,
-    duration: '1 giờ',
+    duration: 60,
     compatibleVehicles: ['VF5', 'VF8', 'VF9', 'VFE34'],
     category: 'inspection'
   },
@@ -25,7 +25,7 @@ const services: Service[] = [
     name: 'Vệ sinh nội thất',
     description: 'Vệ sinh toàn bộ nội thất xe',
     price: 200000,
-    duration: '1.5 giờ',
+    duration: 90,
     compatibleVehicles: ['VF5', 'VF8', 'VF9', 'VFE34'],
     category: 'cleaning'
   },
@@ -34,7 +34,7 @@ const services: Service[] = [
     name: 'Kiểm tra điện',
     description: 'Kiểm tra hệ thống điện, ắc quy',
     price: 250000,
-    duration: '1 giờ',
+    duration: 60,
     compatibleVehicles: ['VF5', 'VF8', 'VF9', 'VFE34'],
     category: 'inspection'
   },
@@ -43,7 +43,7 @@ const services: Service[] = [
     name: 'Thay lốp',
     description: 'Thay lốp mới, cân bằng bánh xe',
     price: 800000,
-    duration: '1 giờ',
+    duration: 60,
     compatibleVehicles: ['VF5', 'VF8', 'VF9', 'VFE34'],
     category: 'repair'
   },
@@ -52,7 +52,7 @@ const services: Service[] = [
     name: 'Bảo dưỡng điều hòa',
     description: 'Vệ sinh, bảo dưỡng hệ thống điều hòa',
     price: 400000,
-    duration: '2 giờ',
+    duration: 120,
     compatibleVehicles: ['VF5', 'VF8', 'VF9', 'VFE34'],
     category: 'maintenance'
   },
@@ -61,7 +61,7 @@ const services: Service[] = [
     name: 'Kiểm tra động cơ',
     description: 'Kiểm tra toàn diện động cơ',
     price: 600000,
-    duration: '3 giờ',
+    duration: 180,
     compatibleVehicles: ['VF8', 'VF9', 'VFE34'],
     category: 'inspection'
   },
@@ -70,7 +70,7 @@ const services: Service[] = [
     name: 'Vệ sinh ngoại thất',
     description: 'Rửa xe, đánh bóng, bảo dưỡng sơn',
     price: 350000,
-    duration: '2 giờ',
+    duration: 120,
     compatibleVehicles: ['VF5', 'VF8', 'VF9', 'VFE34'],
     category: 'cleaning'
   },
@@ -79,7 +79,7 @@ const services: Service[] = [
     name: 'Thay dầu hộp số',
     description: 'Thay dầu hộp số tự động',
     price: 450000,
-    duration: '1.5 giờ',
+    duration: 90,
     compatibleVehicles: ['VF8', 'VF9', 'VFE34'],
     category: 'maintenance'
   },
@@ -88,7 +88,7 @@ const services: Service[] = [
     name: 'Kiểm tra hệ thống treo',
     description: 'Kiểm tra giảm xóc, thanh chống',
     price: 300000,
-    duration: '1.5 giờ',
+    duration: 90,
     compatibleVehicles: ['VF5', 'VF8', 'VF9', 'VFE34'],
     category: 'inspection'
   },
@@ -97,7 +97,7 @@ const services: Service[] = [
     name: 'Bảo dưỡng phanh',
     description: 'Thay má phanh, kiểm tra dầu phanh',
     price: 500000,
-    duration: '2 giờ',
+    duration: 120,
     compatibleVehicles: ['VF5', 'VF8', 'VF9', 'VFE34'],
     category: 'maintenance'
   },
@@ -106,7 +106,7 @@ const services: Service[] = [
     name: 'Kiểm tra an toàn',
     description: 'Kiểm tra toàn diện an toàn xe',
     price: 400000,
-    duration: '2.5 giờ',
+    duration: 150,
     compatibleVehicles: ['VF5', 'VF8', 'VF9', 'VFE34'],
     category: 'inspection'
   }
@@ -117,7 +117,7 @@ interface Service {
   name: string;
   description: string;
   price: number;
-  duration: string;
+  duration: number;
   compatibleVehicles: string[];
   category: string;
 }
