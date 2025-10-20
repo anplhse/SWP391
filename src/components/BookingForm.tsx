@@ -49,6 +49,7 @@ interface Service {
   price: number;
   duration: number;
   compatibleVehicles: string[];
+  category?: string;
   status?: string;
 }
 
@@ -88,7 +89,6 @@ export function BookingForm({ services }: BookingFormProps) {
     plate?: string;
     type?: string;
   } | null>(null);
-  const [isLoadingVin, setIsLoadingVin] = useState(false);
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
   const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState(false);
@@ -137,7 +137,6 @@ export function BookingForm({ services }: BookingFormProps) {
       return;
     }
 
-    setIsLoadingVin(true);
     try {
       const vehicleData = await apiClient.getVehicleByVin(vin);
       setVinData(vehicleData);
@@ -158,8 +157,6 @@ export function BookingForm({ services }: BookingFormProps) {
         description: 'Không thể tra cứu thông tin xe với mã VIN này',
         variant: 'destructive'
       });
-    } finally {
-      setIsLoadingVin(false);
     }
   }, [form, toast]);
 
@@ -167,15 +164,23 @@ export function BookingForm({ services }: BookingFormProps) {
   useEffect(() => {
     if (location.state?.preselectVin) {
       form.setValue('vin', location.state.preselectVin);
-      handleVinLookup(location.state.preselectVin);
+      // Tự động hiển thị thông tin xe mà không cần tra cứu
+      if (location.state?.preselectVehicle) {
+        const vehicle = location.state.preselectVehicle;
+        setVinData({
+          vin: location.state.preselectVin,
+          brand: vehicle.brand || '',
+          model: vehicle.model || '',
+          year: vehicle.year || '',
+          plate: vehicle.plate || '',
+          type: 'electric'
+        });
+        form.setValue('plate', vehicle.plate || '');
+        form.setValue('year', vehicle.year || '');
+        form.setValue('model', vehicle.model || '');
+      }
     }
-    if (location.state?.preselectVehicle) {
-      const vehicle = location.state.preselectVehicle;
-      form.setValue('plate', vehicle.plate || '');
-      form.setValue('year', vehicle.year || '');
-      form.setValue('model', vehicle.model || '');
-    }
-  }, [location.state, form, handleVinLookup]);
+  }, [location.state, form]);
 
   // Load available dates on mount
   useEffect(() => {
@@ -393,9 +398,9 @@ export function BookingForm({ services }: BookingFormProps) {
                 <Button
                   type="button"
                   onClick={() => handleVinLookup(form.getValues('vin'))}
-                  disabled={isLoadingVin || !form.getValues('vin')}
+                  disabled={!form.getValues('vin')}
                 >
-                  {isLoadingVin ? 'Đang tra cứu...' : 'Tra cứu VIN'}
+                  Tra cứu VIN
                 </Button>
               </div>
             </div>

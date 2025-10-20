@@ -302,7 +302,7 @@ export default function BookingConfirmationPage() {
             </Button>
           </>
         )}
-        <Button onClick={() => navigate('/customer/dashboard')}>
+        <Button onClick={() => navigate('/customer')}>
           Về trang chủ
         </Button>
       </div>
