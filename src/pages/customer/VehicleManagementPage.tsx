@@ -183,16 +183,16 @@ export default function VehicleManagementPage() {
         vin: newVehicle.vin,
         name: newVehicle.name,
         plateNumber: newVehicle.plate,
-        year: String(newVehicle.year),
         color: newVehicle.color || 'Trắng',
         distanceTraveledKm: distanceKm,
+        batteryDegradation: 100, // Default 100% (new vehicle)
         purchasedAt: purchasedAtLocal,
         createdAt: nowLocal,
         entityStatus: 'ACTIVE',
         userId: user.id,
         username: user.fullName,
-        vehicleModelId: modelId,
-        modelName: selectedModel?.modelName,
+        modelId: modelId,
+        modelName: selectedModel?.modelName || '',
       };
 
       const response = await apiClient.addVehicle(vehicleData);
@@ -367,7 +367,7 @@ export default function VehicleManagementPage() {
                   setNewVehicle({
                     ...newVehicle,
                     model: m ? m.modelName : '',
-                    year: m?.yearIntroduce ? parseInt(m.yearIntroduce) : newVehicle.year,
+                    // Không tự động binding năm sản xuất từ model
                   });
                 }}
               >
@@ -385,15 +385,6 @@ export default function VehicleManagementPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="year">Năm sản xuất</Label>
-              <Input
-                id="year"
-                type="number"
-                value={newVehicle.year}
-                disabled
-              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="color">Màu sắc</Label>
