@@ -26,7 +26,7 @@ const Index = () => {
           </nav>
           <div className="flex items-center gap-3">
             <Button onClick={() => navigate('/login')} className="px-4">Đăng nhập</Button>
-            <Button variant="outline" disabled className="px-4">Đăng ký (sắp có)</Button>
+            <Button variant="outline" onClick={() => navigate('/login', { state: { openRegister: true } })} className="px-4">Đăng ký</Button>
           </div>
         </div>
       </header>

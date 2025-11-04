@@ -5,7 +5,6 @@ export interface User {
   email: string;
   fullName: string;
   phoneNumber: string;
-  role: string; // Mapped role for frontend use
   roleDisplayName: string; // Original roleDisplayName from backend
   status: string;
   createdAt: string;
@@ -54,11 +53,7 @@ class AuthService {
 
       if (accessToken && userStr) {
         const rawUser = JSON.parse(userStr);
-        // Chuẩn hóa role từ backend sang frontend khi load lại
-        const user = {
-          ...rawUser,
-          role: this.mapRole(rawUser.roleDisplayName || rawUser.role), // Map từ roleDisplayName nếu có
-        };
+        const user = { ...rawUser };
         this.authState = {
           user,
           accessToken,
@@ -85,11 +80,10 @@ class AuthService {
   private saveToStorage(authData: LoginResponse) {
     localStorage.setItem('accessToken', authData.accessToken);
     localStorage.setItem('refreshToken', authData.refreshToken);
-    // Lưu user với role đã chuẩn hóa để F5 không lệch role
+    // Lưu user nguyên trạng từ backend (dùng roleDisplayName)
     const normalizedUser = {
       ...authData.user,
-      role: this.mapRole(authData.user.roleDisplayName), // Map từ roleDisplayName
-      roleDisplayName: authData.user.roleDisplayName, // Lưu nguyên roleDisplayName gốc
+      roleDisplayName: authData.user.roleDisplayName,
     };
     localStorage.setItem('user', JSON.stringify(normalizedUser));
   }
@@ -115,22 +109,15 @@ class AuthService {
     return { ...this.authState };
   }
 
-  async login(credentials: LoginRequest): Promise<LoginResponse & { user: { role: string } }> {
+  async login(credentials: LoginRequest): Promise<LoginResponse> {
     this.authState.isLoading = true;
     this.notifyListeners();
 
     try {
       const response = await apiClient.login(credentials);
 
-      // Map role từ backend sang frontend (từ roleDisplayName)
-      const mappedUser = {
-        ...response.user,
-        role: this.mapRole(response.user.roleDisplayName), // Map từ roleDisplayName
-        roleDisplayName: response.user.roleDisplayName,
-      };
-
       this.authState = {
-        user: mappedUser,
+        user: response.user,
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
         isAuthenticated: true,
@@ -140,15 +127,43 @@ class AuthService {
       this.saveToStorage(response);
       this.notifyListeners();
 
-      return {
-        ...response,
-        user: mappedUser,
-      };
+      return response;
     } catch (error) {
       this.authState.isLoading = false;
       this.notifyListeners();
       throw error;
     }
+  }
+
+  async register(data: { email: string; password: string; fullName: string; phoneNumber: string }): Promise<{ message: string }> {
+    const res = await apiClient.register({
+      emailAddress: data.email,
+      password: data.password,
+      fullName: data.fullName,
+      phoneNumber: data.phoneNumber,
+    });
+    return { message: res.message };
+  }
+
+  async verifyAccount(payload: { userName: string; code: string }): Promise<LoginResponse> {
+    const response = await apiClient.verifyAccount(payload);
+    this.authState = {
+      user: response.user,
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+      isAuthenticated: true,
+      isLoading: false,
+    };
+
+    this.saveToStorage(response);
+    this.notifyListeners();
+    return response;
+  }
+
+  // Public helper: derive role key from display name for routing/guards
+  getRoleKey(): string | null {
+    const display = this.authState.user?.roleDisplayName;
+    return display ? this.mapRole(display) : null;
   }
 
   async logout(): Promise<void> {
@@ -185,36 +200,29 @@ class AuthService {
   };
 
   private mapRole(backendRole: string): string {
-    // Map backend roleDisplayName (from database display_name) to frontend role
-    const roleMap: { [key: string]: string } = {
-      // From database 'name' column (uppercase)
-      'STAFF': 'staff',
-      'TECHNICIAN': 'technician',
-      'ADMIN': 'admin',
-      'CUSTOMER': 'customer',
-      // From database 'display_name' column (capitalized)
-      'Staff Employee': 'staff',
-      'Technician Employee': 'technician',
-      'Admin': 'admin',
-      'Customer': 'customer',
-      // Fallback for other variations
-      'Staff': 'staff',
-      'Technician': 'technician',
+    if (!backendRole) {
+      throw new Error('Role không được xác định từ backend');
+    }
+
+    const normalized = backendRole.trim().toLowerCase();
+
+    // Role mapping với các từ khóa (lowercase để match với normalized)
+    const roleKeywords = {
+      customer: ['customer', 'khách hàng'],
+      staff: ['staff', 'nhân viên'],
+      technician: ['technician', 'kỹ thuật viên'],
+      admin: ['admin', 'administrator', 'quản trị viên']
     };
 
-    // Try exact match first
-    if (roleMap[backendRole]) {
-      return roleMap[backendRole];
+    // Tìm role phù hợp
+    for (const [role, keywords] of Object.entries(roleKeywords)) {
+      if (keywords.some(keyword => normalized.includes(keyword))) {
+        return role;
+      }
     }
 
-    // Try uppercase version
-    const normalizedRole = backendRole.toUpperCase();
-    if (roleMap[normalizedRole]) {
-      return roleMap[normalizedRole];
-    }
-
-    // Default fallback
-    return backendRole.toLowerCase();
+    // Throw error for unknown roles
+    throw new Error(`Role "${backendRole}" không được hỗ trợ. Vui lòng liên hệ quản trị viên.`);
   }
 
 

@@ -1,4 +1,5 @@
 import { useAuth } from '@/hooks/useAuth';
+import { authService } from '@/lib/auth';
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
@@ -31,13 +32,14 @@ export function ProtectedRoute({
   }
 
   // Check role if required
-  if (requiredRole && user.role !== requiredRole) {
+  const roleKey = authService.getRoleKey();
+  if (requiredRole && roleKey !== requiredRole) {
     return <Navigate to="/unauthorized" replace />;
   }
 
   // Check user type if required
   if (requiredUserType) {
-    const userType = user.role === 'customer' ? 'customer' : 'service';
+    const userType = roleKey === 'customer' ? 'customer' : 'service';
     if (userType !== requiredUserType) {
       return <Navigate to="/unauthorized" replace />;
     }

@@ -95,14 +95,29 @@ class ApiClient {
         let message = `HTTP error! status: ${response.status}`;
         let parsed: unknown = undefined;
         try { parsed = text ? JSON.parse(text) : undefined; } catch (e) { /* ignore invalid json */ }
-        if (
-          parsed &&
-          typeof parsed === 'object' &&
-          'message' in parsed &&
-          typeof (parsed as { message?: unknown }).message === 'string'
-        ) {
-          message = (parsed as { message: string }).message;
+
+        // Try to extract error message from various backend response formats
+        if (parsed && typeof parsed === 'object') {
+          const errObj = parsed as Record<string, unknown>;
+
+          // Check common error message fields
+          if (typeof errObj.message === 'string' && errObj.message) {
+            message = errObj.message;
+          } else if (typeof errObj.error === 'string' && errObj.error) {
+            message = errObj.error;
+          } else if (typeof errObj.errorMessage === 'string' && errObj.errorMessage) {
+            message = errObj.errorMessage;
+          } else if (Array.isArray(errObj.errors) && errObj.errors.length > 0) {
+            // Handle validation errors array
+            const firstError = errObj.errors[0];
+            if (typeof firstError === 'string') {
+              message = firstError;
+            } else if (typeof firstError === 'object' && firstError && 'message' in firstError && typeof (firstError as { message?: unknown }).message === 'string') {
+              message = (firstError as { message: string }).message;
+            }
+          }
         }
+
         throw new Error(message);
       }
 
@@ -123,6 +138,25 @@ class ApiClient {
     return this.request<LoginResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
+    });
+  }
+
+  async register(data: {
+    emailAddress: string;
+    password: string;
+    fullName: string;
+    phoneNumber: string;
+  }): Promise<{ message: string; timestamp?: string; path?: string }> {
+    return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async verifyAccount(payload: { userName: string; code: string }): Promise<LoginResponse> {
+    return this.request<LoginResponse>('/auth/verify', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   }
 
@@ -193,11 +227,16 @@ class ApiClient {
     vin: string;
     name: string;
     plateNumber: string;
-    year: string;
     color: string;
     distanceTraveledKm: number;
+    batteryDegradation: number;
     purchasedAt: string;
-    vehicleModelId: number;
+    createdAt: string;
+    entityStatus: string;
+    userId: number;
+    username: string;
+    modelId: number;
+    modelName: string;
   }): Promise<{ id?: number }> {
     return this.request<{ id?: number }>('/vehicles', {
       method: 'POST',
