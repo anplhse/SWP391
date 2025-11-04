@@ -230,13 +230,9 @@ class ApiClient {
     color: string;
     distanceTraveledKm: number;
     batteryDegradation: number;
-    purchasedAt: string;
-    createdAt: string;
-    entityStatus: string;
+    purchasedAt: string; // ISO string with Z
     userId: number;
-    username: string;
-    modelId: number;
-    modelName: string;
+    vehicleModelId: number;
   }): Promise<{ id?: number }> {
     return this.request<{ id?: number }>('/vehicles', {
       method: 'POST',
@@ -251,6 +247,7 @@ class ApiClient {
     year: string | null;
     color: string;
     distanceTraveledKm: number;
+    batteryDegradation?: number;
     purchasedAt: string;
     createdAt: string;
     entityStatus: string;

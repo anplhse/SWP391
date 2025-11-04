@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { apiClient } from '@/lib/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   AlertCircle,
@@ -23,9 +24,9 @@ import {
   Settings,
   Wrench
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
 
 // Schema validation cho form edit xe
@@ -41,7 +42,6 @@ interface Vehicle {
   name: string;
   plate: string;
   model: string;
-  year: number;
   battery: number;
   nextService: string;
   status: 'healthy' | 'warning' | 'critical';
@@ -72,12 +72,15 @@ interface ServiceRecord {
 export default function VehicleProfilePage() {
   const navigate = useNavigate();
   const { vehicleId } = useParams();
+  const location = useLocation() as { state?: { vehicle?: Vehicle } };
   const { toast } = useToast();
   const user = { email: 'customer@example.com', role: 'customer', userType: 'customer' };
 
   // State cho dialog edit
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [vehicleData, setVehicleData] = useState<Vehicle | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Form cho edit xe
   const form = useForm<VehicleEditFormData>({
@@ -90,10 +93,10 @@ export default function VehicleProfilePage() {
 
   // Handlers
   const handleEditClick = () => {
-    setVehicleData(vehicle);
+    if (!vehicleData) return;
     form.reset({
-      battery: vehicle.battery,
-      mileage: vehicle.mileage
+      battery: vehicleData.battery,
+      mileage: vehicleData.mileage
     });
     setIsEditDialogOpen(true);
   };
@@ -110,21 +113,89 @@ export default function VehicleProfilePage() {
     setIsEditDialogOpen(false);
   };
 
-  // Mock data - in real app, this would be fetched based on vehicleId
-  const vehicle: Vehicle = {
-    id: vehicleId || '1',
-    name: 'VinFast VF8',
-    plate: '30A-123.45',
-    model: 'VF8 Plus',
-    year: 2024,
-    battery: 85,
-    nextService: '2025-10-15',
-    status: 'healthy',
-    mileage: 15000,
-    color: 'Trắng',
-    vin: 'VF8PLUS2024001',
-    purchaseDate: '2024-01-15'
-  };
+  // Load vehicle detail from API by VIN (vehicleId param)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setIsLoading(true);
+        setLoadError(null);
+        if (!vehicleId) throw new Error('Thiếu VIN của xe');
+
+        // 1) Prefer vehicle from navigation state
+        if (location.state?.vehicle) {
+          if (mounted) setVehicleData(location.state.vehicle);
+          return;
+        }
+
+        // 2) Try fetch by VIN endpoint
+        try {
+          const apiV = await apiClient.getVehicleByVin(vehicleId);
+          // Enrich with user's vehicle list to get mileage and battery degradation
+          let enrichedMileage = 0;
+          let enrichedBattery = 0;
+          try {
+            const auth = (await import('@/lib/auth')).authService;
+            const current = auth.getAuthState().user;
+            if (current) {
+              const list = await apiClient.getVehiclesByUserId(current.id);
+              const match = list.find(v => v.vin === apiV.vin);
+              if (match) {
+                enrichedMileage = Math.max(0, Number(match.distanceTraveledKm) || 0);
+                enrichedBattery = Math.max(0, 100 - (Number(match.batteryDegradation) || 0));
+              }
+            }
+          } catch (_) { /* ignore enrichment errors */ }
+
+          const mapped: Vehicle = {
+            id: apiV.vin,
+            name: apiV.brand ? `${apiV.brand} ${apiV.model}` : (apiV.model || apiV.vin),
+            plate: apiV.plate || '-',
+            model: apiV.model || '-',
+            battery: enrichedBattery,
+            nextService: new Date().toISOString().split('T')[0],
+            status: 'healthy',
+            mileage: enrichedMileage,
+            color: apiV.type || '-',
+            vin: apiV.vin,
+            purchaseDate: new Date().toISOString().split('T')[0],
+          };
+          if (mounted) setVehicleData(mapped);
+          return;
+        } catch (e) {
+          // fallthrough to search in user's vehicles
+        }
+
+        // 3) Fallback: get vehicles by current user and find by VIN
+        const auth = (await import('@/lib/auth')).authService;
+        const current = auth.getAuthState().user;
+        if (!current) throw new Error('Chưa đăng nhập');
+        const list = await apiClient.getVehiclesByUserId(current.id);
+        const found = list.find(v => v.vin === vehicleId);
+        if (!found) throw new Error('Không tìm thấy xe');
+        const mappedFromList: Vehicle = {
+          id: found.vin,
+          name: found.name || found.modelName,
+          plate: found.plateNumber,
+          model: found.modelName,
+          battery: Math.max(0, 100 - (Number(found.batteryDegradation) || 0)),
+          nextService: new Date().toISOString().split('T')[0],
+          status: found.entityStatus === 'ACTIVE' ? 'healthy' : 'warning',
+          mileage: Math.max(0, Math.round(found.distanceTraveledKm || 0)),
+          color: found.color,
+          vin: found.vin,
+          purchaseDate: (found.purchasedAt || '').split('T')[0] || new Date().toISOString().split('T')[0],
+        };
+        if (mounted) setVehicleData(mappedFromList);
+      } catch (e) {
+        console.error('Load vehicle failed', e);
+        if (mounted) setLoadError('Không tải được thông tin xe');
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [vehicleId, location.state]);
 
   const serviceHistory: ServiceRecord[] = [
     {
@@ -211,6 +282,24 @@ export default function VehicleProfilePage() {
 
 
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (loadError || !vehicleData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
+        {loadError || 'Không có dữ liệu xe'}
+      </div>
+    );
+  }
+
+  const vehicle = vehicleData;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -254,9 +343,8 @@ export default function VehicleProfilePage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span>Số km:</span>
-                  <span className="font-medium">{vehicle.mileage.toLocaleString()}</span>
+                  <span className="font-medium">{vehicle.mileage.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}</span>
                 </div>
-                <Progress value={60} className="w-full" />
               </div>
             </div>
 
@@ -536,10 +624,6 @@ export default function VehicleProfilePage() {
                   <div>
                     <span className="text-muted-foreground">Model:</span>
                     <p className="font-medium">{vehicleData?.model}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Năm:</span>
-                    <p className="font-medium">{vehicleData?.year}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Màu sắc:</span>
