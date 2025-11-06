@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/lib/api';
-import { Eye, Search } from 'lucide-react';
+import { Eye, Plus, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 type VehicleModel = {
@@ -28,6 +28,7 @@ type VehicleModel = {
 export default function VehicleModelsPage() {
   const { toast } = useToast();
   const [models, setModels] = useState<VehicleModel[]>([]);
+  const [modelEnumValues, setModelEnumValues] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [page, setPage] = useState(1);
@@ -39,6 +40,18 @@ export default function VehicleModelsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingModel, setEditingModel] = useState<VehicleModel | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newModel, setNewModel] = useState<Partial<VehicleModel>>({
+    brandName: '',
+    modelName: '',
+    dimensions: '',
+    seats: undefined,
+    batteryCapacityKwh: undefined,
+    rangeKm: undefined,
+    chargingTimeHours: undefined,
+    motorPowerKw: undefined,
+    weightKg: undefined,
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -54,6 +67,23 @@ export default function VehicleModelsPage() {
     })();
     return () => { mounted = false; };
   }, [toast]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const enumData = await apiClient.getVehicleModelEnum();
+        if (!mounted) return;
+        // Lọc bỏ giá trị "string" nếu có
+        const values = enumData.enumValue.filter(v => v !== 'string');
+        setModelEnumValues(values);
+      } catch (e) {
+        console.error('Failed to load vehicle model enum', e);
+        // Không hiển thị toast vì đây không phải lỗi nghiêm trọng
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   const filtered = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -107,6 +137,90 @@ export default function VehicleModelsPage() {
     setEditingModel({ ...model });
     setIsEditDialogOpen(true);
     setIsDetailDialogOpen(false);
+  };
+
+  const handleAddNew = () => {
+    setNewModel({
+      brandName: '',
+      modelName: '',
+      dimensions: '',
+      seats: undefined,
+      batteryCapacityKwh: undefined,
+      rangeKm: undefined,
+      chargingTimeHours: undefined,
+      motorPowerKw: undefined,
+      weightKg: undefined,
+    });
+    setIsAddDialogOpen(true);
+  };
+
+  const handleSaveAdd = async () => {
+    if (!newModel.brandName || !newModel.modelName) {
+      toast({
+        title: 'Thông tin không đầy đủ',
+        description: 'Vui lòng nhập Hãng và Model.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const payload: {
+        brandName: string;
+        modelName: string;
+        dimensions?: string;
+        seats?: number;
+        batteryCapacityKwh?: number;
+        rangeKm?: number;
+        chargingTimeHours?: number;
+        motorPowerKw?: number;
+        weightKg?: number;
+      } = {
+        brandName: newModel.brandName,
+        modelName: newModel.modelName,
+      };
+
+      if (newModel.dimensions) payload.dimensions = newModel.dimensions;
+      if (newModel.seats !== undefined) payload.seats = newModel.seats;
+      if (newModel.batteryCapacityKwh !== undefined) payload.batteryCapacityKwh = newModel.batteryCapacityKwh;
+      if (newModel.rangeKm !== undefined) payload.rangeKm = newModel.rangeKm;
+      if (newModel.chargingTimeHours !== undefined) payload.chargingTimeHours = newModel.chargingTimeHours;
+      if (newModel.motorPowerKw !== undefined) payload.motorPowerKw = newModel.motorPowerKw;
+      if (newModel.weightKg !== undefined) payload.weightKg = newModel.weightKg;
+
+      const created = await apiClient.createVehicleModel(payload);
+
+      // Thêm vào danh sách
+      setModels([...models, created]);
+
+      toast({
+        title: 'Thêm mới thành công',
+        description: 'Model mới đã được thêm vào hệ thống.',
+      });
+
+      setIsAddDialogOpen(false);
+      setNewModel({
+        brandName: '',
+        modelName: '',
+        dimensions: '',
+        seats: undefined,
+        batteryCapacityKwh: undefined,
+        rangeKm: undefined,
+        chargingTimeHours: undefined,
+        motorPowerKw: undefined,
+        weightKg: undefined,
+      });
+    } catch (error) {
+      console.error('Failed to create model', error);
+      toast({
+        title: 'Thêm mới thất bại',
+        description: 'Không thể thêm model. Vui lòng thử lại.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -176,7 +290,7 @@ export default function VehicleModelsPage() {
               className="pl-10 w-64"
             />
           </div>
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as any); setPage(1); }}>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as 'ALL' | 'ACTIVE' | 'INACTIVE'); setPage(1); }}>
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Trạng thái" />
             </SelectTrigger>
@@ -187,9 +301,15 @@ export default function VehicleModelsPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage <= 1}>Trước</Button>
-          <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>Sau</Button>
+        <div className="flex items-center gap-3">
+          <Button onClick={handleAddNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            Thêm mới
+          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage <= 1}>Trước</Button>
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>Sau</Button>
+          </div>
         </div>
       </div>
 
@@ -360,11 +480,29 @@ export default function VehicleModelsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-modelName">Model *</Label>
-                  <Input
-                    id="edit-modelName"
-                    value={editingModel.modelName}
-                    onChange={(e) => setEditingModel({ ...editingModel, modelName: e.target.value })}
-                  />
+                  {modelEnumValues.length > 0 ? (
+                    <Select
+                      value={editingModel.modelName}
+                      onValueChange={(value) => setEditingModel({ ...editingModel, modelName: value })}
+                    >
+                      <SelectTrigger id="edit-modelName">
+                        <SelectValue placeholder="Chọn model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {modelEnumValues.map((value) => (
+                          <SelectItem key={value} value={value}>
+                            {value}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      id="edit-modelName"
+                      value={editingModel.modelName}
+                      onChange={(e) => setEditingModel({ ...editingModel, modelName: e.target.value })}
+                    />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-dimensions">Kích thước</Label>
@@ -468,6 +606,154 @@ export default function VehicleModelsPage() {
             </Button>
             <Button onClick={handleSaveEdit} disabled={isSaving}>
               {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Thêm Model Mới</DialogTitle>
+            <DialogDescription>
+              Nhập thông tin model xe mới. Các trường có dấu * là bắt buộc.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="add-brandName">Hãng *</Label>
+                <Input
+                  id="add-brandName"
+                  value={newModel.brandName || ''}
+                  onChange={(e) => setNewModel({ ...newModel, brandName: e.target.value })}
+                  placeholder="VD: VinFast"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="add-modelName">Model *</Label>
+                {modelEnumValues.length > 0 ? (
+                  <Select
+                    value={newModel.modelName || ''}
+                    onValueChange={(value) => setNewModel({ ...newModel, modelName: value })}
+                  >
+                    <SelectTrigger id="add-modelName">
+                      <SelectValue placeholder="Chọn model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {modelEnumValues.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {value}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="add-modelName"
+                    value={newModel.modelName || ''}
+                    onChange={(e) => setNewModel({ ...newModel, modelName: e.target.value })}
+                    placeholder="VD: VF 3"
+                  />
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="add-dimensions">Kích thước</Label>
+                <Input
+                  id="add-dimensions"
+                  value={newModel.dimensions || ''}
+                  onChange={(e) => setNewModel({ ...newModel, dimensions: e.target.value })}
+                  placeholder="VD: 3190x1675x1600"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="add-seats">Chỗ ngồi</Label>
+                <Input
+                  id="add-seats"
+                  type="number"
+                  min={1}
+                  value={newModel.seats ?? ''}
+                  onChange={(e) => setNewModel({ ...newModel, seats: e.target.value ? Number(e.target.value) : undefined })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="add-batteryCapacityKwh">Pin (kWh)</Label>
+                <Input
+                  id="add-batteryCapacityKwh"
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  value={newModel.batteryCapacityKwh ?? ''}
+                  onChange={(e) => setNewModel({ ...newModel, batteryCapacityKwh: e.target.value ? Number(e.target.value) : undefined })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="add-rangeKm">Tầm hoạt động (km)</Label>
+                <Input
+                  id="add-rangeKm"
+                  type="number"
+                  min={0}
+                  value={newModel.rangeKm ?? ''}
+                  onChange={(e) => setNewModel({ ...newModel, rangeKm: e.target.value ? Number(e.target.value) : undefined })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="add-chargingTimeHours">Thời gian sạc (h)</Label>
+                <Input
+                  id="add-chargingTimeHours"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  value={newModel.chargingTimeHours ?? ''}
+                  onChange={(e) => setNewModel({ ...newModel, chargingTimeHours: e.target.value ? Number(e.target.value) : undefined })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="add-motorPowerKw">Công suất (kW)</Label>
+                <Input
+                  id="add-motorPowerKw"
+                  type="number"
+                  min={0}
+                  value={newModel.motorPowerKw ?? ''}
+                  onChange={(e) => setNewModel({ ...newModel, motorPowerKw: e.target.value ? Number(e.target.value) : undefined })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="add-weightKg">Khối lượng (kg)</Label>
+                <Input
+                  id="add-weightKg"
+                  type="number"
+                  min={0}
+                  value={newModel.weightKg ?? ''}
+                  onChange={(e) => setNewModel({ ...newModel, weightKg: e.target.value ? Number(e.target.value) : undefined })}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddDialogOpen(false);
+                setNewModel({
+                  brandName: '',
+                  modelName: '',
+                  dimensions: '',
+                  seats: undefined,
+                  batteryCapacityKwh: undefined,
+                  rangeKm: undefined,
+                  chargingTimeHours: undefined,
+                  motorPowerKw: undefined,
+                  weightKg: undefined,
+                });
+              }}
+              disabled={isSaving}
+            >
+              Hủy
+            </Button>
+            <Button onClick={handleSaveAdd} disabled={isSaving}>
+              {isSaving ? 'Đang thêm...' : 'Thêm mới'}
             </Button>
           </DialogFooter>
         </DialogContent>

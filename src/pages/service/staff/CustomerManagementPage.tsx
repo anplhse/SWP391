@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/lib/api';
+import { Plus } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -160,8 +161,8 @@ export default function CustomerManagementPage() {
         onDelete={handleDeleteCustomer}
         onAdd={handleAddCustomer}
         showActions={true}
-        rightAction={(
-          <div className="flex items-center gap-2">
+        filters={(
+          <>
             <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(1); }}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Vai trò" />
@@ -174,7 +175,7 @@ export default function CustomerManagementPage() {
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Trạng thái" />
               </SelectTrigger>
               <SelectContent>
@@ -184,7 +185,15 @@ export default function CustomerManagementPage() {
                 <SelectItem value="ARCHIVED">ARCHIVED</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex items-center gap-1">
+          </>
+        )}
+        rightAction={(
+          <>
+            <Button onClick={handleAddCustomer}>
+              <Plus className="w-4 h-4 mr-2" />
+              Thêm tài khoản
+            </Button>
+            <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage <= 1}>
                 Trước
               </Button>
@@ -192,7 +201,7 @@ export default function CustomerManagementPage() {
                 Sau
               </Button>
             </div>
-          </div>
+          </>
         )}
       />
 

@@ -360,6 +360,36 @@ class ApiClient {
     });
   }
 
+  async createVehicleModel(payload: {
+    brandName: string;
+    modelName: string;
+    dimensions?: string;
+    seats?: number;
+    batteryCapacityKwh?: number;
+    rangeKm?: number;
+    chargingTimeHours?: number;
+    motorPowerKw?: number;
+    weightKg?: number;
+  }): Promise<{
+    id: number;
+    brandName: string;
+    modelName: string;
+    dimensions?: string;
+    seats?: number;
+    batteryCapacityKwh?: number;
+    rangeKm?: number;
+    chargingTimeHours?: number;
+    motorPowerKw?: number;
+    weightKg?: number;
+    status: string;
+    createdAt?: string;
+  }> {
+    return this.request('/vehicle-models', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
   async updateVehicleModel(
     id: number,
     payload: Partial<{
@@ -391,6 +421,17 @@ class ApiClient {
     return this.request(`/vehicle-models/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
+    });
+  }
+
+  async getVehicleModelEnum(): Promise<{
+    name: string;
+    enumValue: string[];
+    description: string;
+    type: string;
+  }> {
+    return this.request('/vehicle-models/enum', {
+      method: 'GET',
     });
   }
 

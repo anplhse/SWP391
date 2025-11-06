@@ -121,7 +121,7 @@ export function DashboardLayout({ children, title, user }: DashboardLayoutProps)
       case 'staff':
         return [
           { to: '/service/staff', icon: LayoutDashboard, label: 'Dashboard' },
-          { to: '/service/customers', icon: Users, label: 'Quản lý khách hàng' },
+          { to: '/service/customers', icon: Users, label: 'Quản lý tài khoản' },
           { to: '/service/vehicles', icon: Car, label: 'Quản lý xe' },
           { to: '/service/appointments', icon: Calendar, label: 'Quản lý lịch hẹn' },
           { to: '/service/services', icon: Wrench, label: 'Quản lý dịch vụ' },

@@ -24,6 +24,7 @@ interface CustomerTableProps {
   onDelete: (customerId: string) => void;
   onAdd: () => void;
   showActions?: boolean;
+  filters?: ReactNode;
   rightAction?: ReactNode;
 }
 
@@ -33,6 +34,7 @@ export function CustomerTable({
   onDelete,
   onAdd,
   showActions = true,
+  filters,
   rightAction
 }: CustomerTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -62,24 +64,19 @@ export function CustomerTable({
     <div className="space-y-4">
       {/* Search Controls */}
       <div className="flex items-center justify-between">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Tìm kiếm tài khoản..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-64"
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Tìm kiếm tài khoản..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-64"
+            />
+          </div>
+          {filters}
         </div>
-        <div className="flex items-center gap-2">
-          {rightAction}
-          {showActions && (
-            <Button onClick={onAdd}>
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm tài khoản
-            </Button>
-          )}
-        </div>
+        {rightAction && <div className="flex items-center gap-3">{rightAction}</div>}
       </div>
 
       {/* Customers Table */}

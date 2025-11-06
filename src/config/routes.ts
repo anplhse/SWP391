@@ -19,8 +19,6 @@ const routes = {
     packages: '/customer/packages',
     history: '/customer/history',
     vehicles: '/customer/vehicles',
-    vehicleDetail: (vehicleId: string) => `/customer/vehicle/${vehicleId}`,
-    payment: '/customer/payment',
   },
 
   // Service Center routes
