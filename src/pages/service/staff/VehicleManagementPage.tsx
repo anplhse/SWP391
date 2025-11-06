@@ -14,20 +14,22 @@ import { z } from 'zod';
 // Schema validation
 const vehicleSchema = z.object({
   name: z.string().optional(),
-  licensePlate: z.string().min(1, 'Biển số xe là bắt buộc'),
-  brand: z.string().min(1, 'Hãng xe là bắt buộc'),
-  model: z.string().min(1, 'Model xe là bắt buộc'),
-  year: z.string().min(1, 'Năm sản xuất là bắt buộc').refine((val) => !isNaN(Number(val)) && Number(val) > 1900 && Number(val) <= new Date().getFullYear(), 'Năm sản xuất không hợp lệ'),
-  owner: z.string().min(1, 'Tên chủ xe là bắt buộc'),
-  ownerPhone: z.string().min(10, 'Số điện thoại phải có ít nhất 10 số'),
-  mileage: z.string().min(1, 'Số km là bắt buộc').refine((val) => !isNaN(Number(val)) && Number(val) >= 0, 'Số km phải là số dương'),
+  plate: z.string().min(1, 'Biển số xe là bắt buộc'),
+  modelId: z.string().min(1, 'Model xe là bắt buộc'),
   color: z.string().min(1, 'Màu sắc là bắt buộc'),
+  vin: z.string().min(1, 'VIN là bắt buộc'),
+  purchaseDate: z.string().min(1, 'Ngày mua là bắt buộc'),
+  mileage: z.string().refine((val) => {
+    if (!val) return true; // Optional
+    const num = Number(val);
+    return !isNaN(num) && num >= 0;
+  }, 'Số km phải là số dương'),
   batteryDegradation: z.string().refine((val) => {
     if (!val) return true; // Optional
     const num = Number(val);
     return !isNaN(num) && num >= 0 && num <= 100;
   }, 'Pin phải từ 0 đến 100'),
-  status: z.enum(['active', 'maintenance', 'warning']).optional()
+  userId: z.string().min(1, 'Chủ xe là bắt buộc'),
 });
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
@@ -57,21 +59,23 @@ export default function VehicleManagementPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const { toast } = useToast();
+  const [vehicleModels, setVehicleModels] = useState<Array<{ id: number; brandName: string; modelName: string; status: string }>>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [users, setUsers] = useState<Array<{ id: number; fullName: string; email: string }>>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
 
   const form = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: {
       name: '',
-      licensePlate: '',
-      brand: '',
-      model: '',
-      year: '',
-      owner: '',
-      ownerPhone: '',
-      mileage: '',
+      plate: '',
+      modelId: '',
       color: '',
+      vin: '',
+      purchaseDate: '',
+      mileage: '',
       batteryDegradation: '',
-      status: 'active'
+      userId: '',
     }
   });
 
@@ -106,6 +110,40 @@ export default function VehicleManagementPage() {
     return () => { mounted = false; };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setModelsLoading(true);
+        const models = await apiClient.getVehicleModels();
+        if (!mounted) return;
+        setVehicleModels(models.filter((m) => m.status === 'ACTIVE'));
+      } catch (e) {
+        console.error('Failed to load vehicle models', e);
+      } finally {
+        if (mounted) setModelsLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setUsersLoading(true);
+        const userList = await apiClient.getAllUsers();
+        if (!mounted) return;
+        setUsers(userList);
+      } catch (e) {
+        console.error('Failed to load users', e);
+      } finally {
+        if (mounted) setUsersLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
 
   // Pagination helpers
   const totalPages = Math.max(1, Math.ceil(vehicles.length / pageSize));
@@ -124,16 +162,14 @@ export default function VehicleManagementPage() {
     setEditingVehicle(null);
     form.reset({
       name: '',
-      licensePlate: '',
-      brand: '',
-      model: '',
-      year: '',
-      owner: '',
-      ownerPhone: '',
-      mileage: '',
+      plate: '',
+      modelId: '',
       color: '',
+      vin: '',
+      purchaseDate: '',
+      mileage: '',
       batteryDegradation: '',
-      status: 'active'
+      userId: '',
     });
     setIsDialogOpen(true);
   };
@@ -142,16 +178,14 @@ export default function VehicleManagementPage() {
     setEditingVehicle(vehicle);
     form.reset({
       name: vehicle.name || '',
-      licensePlate: vehicle.licensePlate,
-      brand: vehicle.brand,
-      model: vehicle.model,
-      year: vehicle.year.toString(),
-      owner: vehicle.owner,
-      ownerPhone: vehicle.ownerPhone,
-      mileage: vehicle.mileage.toString(),
+      plate: vehicle.licensePlate,
+      modelId: '',
       color: vehicle.color || '',
+      vin: vehicle.vin,
+      purchaseDate: vehicle.lastService,
+      mileage: vehicle.mileage.toString(),
       batteryDegradation: vehicle.battery?.toString() || '',
-      status: vehicle.status || 'active'
+      userId: '',
     });
     setIsDialogOpen(true);
   };
@@ -194,26 +228,63 @@ export default function VehicleManagementPage() {
           description: "Thông tin xe đã được cập nhật."
         });
       } else {
-        // Add new vehicle (keep existing logic for now)
-        const vehicleData: Vehicle = {
-          id: (vehicles.length + 1).toString(),
-          vin: '',
-          licensePlate: data.licensePlate,
-          brand: data.brand,
-          model: data.model,
-          year: parseInt(data.year),
-          owner: data.owner,
-          ownerPhone: data.ownerPhone,
-          lastService: new Date().toISOString().split('T')[0],
-          nextService: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          status: data.status || 'active',
-          mileage: parseInt(data.mileage),
-          color: data.color,
-          battery: data.batteryDegradation ? Number(data.batteryDegradation) : null,
+        // Add new vehicle using API
+        const selectedModel = vehicleModels.find(m => String(m.id) === data.modelId);
+        if (!selectedModel) {
+          toast({
+            title: "Lỗi",
+            description: "Vui lòng chọn model xe",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        const purchasedAtIsoZ = data.purchaseDate
+          ? new Date(data.purchaseDate).toISOString()
+          : new Date().toISOString();
+        const distanceKm = data.mileage === ''
+          ? null
+          : (typeof data.mileage === 'number' ? data.mileage : Number(data.mileage));
+        const degVal = data.batteryDegradation === ''
+          ? null
+          : (typeof data.batteryDegradation === 'number' ? data.batteryDegradation : Number(data.batteryDegradation));
+        const degradation = degVal === null ? null : Math.max(0, Math.min(100, isNaN(degVal) ? 0 : degVal));
+
+        const vehicleData = {
+          vin: data.vin,
           name: data.name || null,
+          plateNumber: data.plate,
+          color: data.color || 'Trắng',
+          distanceTraveledKm: distanceKm,
+          batteryDegradation: degradation,
+          purchasedAt: purchasedAtIsoZ,
+          userId: Number(data.userId),
+          vehicleModelId: selectedModel.id,
         };
 
-        setVehicles([...vehicles, vehicleData]);
+        await apiClient.addVehicle(vehicleData);
+
+        // Reload vehicles list
+        const list = await apiClient.getAllVehicles();
+        const mapped: Vehicle[] = list.map((v, idx) => ({
+          id: v.vin || String(idx),
+          vin: v.vin,
+          licensePlate: v.plateNumber,
+          brand: v.modelName.split(' ')[0] || '',
+          model: v.modelName,
+          year: new Date(v.purchasedAt).getFullYear(),
+          owner: v.username,
+          ownerPhone: '',
+          lastService: v.purchasedAt?.split('T')[0] || new Date(v.createdAt).toISOString().split('T')[0],
+          nextService: v.purchasedAt?.split('T')[0] || new Date(v.createdAt).toISOString().split('T')[0],
+          status: 'active',
+          mileage: Number.isFinite(Number(v.distanceTraveledKm)) ? Number(v.distanceTraveledKm) : 0,
+          color: v.color,
+          battery: typeof v.batteryDegradation === 'number' ? v.batteryDegradation : null,
+          name: v.name,
+        }));
+        setVehicles(mapped);
+
         toast({
           title: "Thêm xe thành công",
           description: "Xe mới đã được thêm vào hệ thống."
@@ -262,15 +333,6 @@ export default function VehicleManagementPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Quản lý xe (Staff)</h1>
-          <p className="text-muted-foreground">Xem và quản trị toàn bộ xe trong hệ thống</p>
-        </div>
-        <Button onClick={handleAddVehicle}>Thêm xe mới</Button>
-      </div>
-
       <VehicleTable
         mode="staff"
         vehicles={pagedVehicles.map(v => ({
@@ -290,13 +352,18 @@ export default function VehicleManagementPage() {
           lastService: v.lastService,
         }))}
         rightAction={(
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={currentPage <= 1}>
-              Trước
+          <div className="flex items-center gap-3">
+            <Button onClick={handleAddVehicle}>
+              Thêm xe mới
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>
-              Sau
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={currentPage <= 1}>
+                Trước
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>
+                Sau
+              </Button>
+            </div>
           </div>
         )}
         onEdit={(veh) => {
@@ -396,7 +463,7 @@ export default function VehicleManagementPage() {
                 </>
               ) : (
                 <>
-                  {/* Khi thêm mới: hiển thị đầy đủ các field */}
+                  {/* Khi thêm mới: hiển thị đầy đủ các field giống customer */}
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -413,12 +480,12 @@ export default function VehicleManagementPage() {
                     />
                     <FormField
                       control={form.control}
-                      name="brand"
+                      name="plate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Hãng xe *</FormLabel>
+                          <FormLabel>Biển số *</FormLabel>
                           <FormControl>
-                            <Input placeholder="Nhập hãng xe" {...field} />
+                            <Input placeholder="VD: 30A-12345" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -426,71 +493,30 @@ export default function VehicleManagementPage() {
                     />
                     <FormField
                       control={form.control}
-                      name="licensePlate"
+                      name="modelId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Biển số xe *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Nhập biển số xe" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="model"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Model xe *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Nhập model xe" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="year"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Năm sản xuất *</FormLabel>
-                          <FormControl>
-                            <Input type="number" placeholder="Nhập năm sản xuất" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="owner"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tên chủ xe *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Nhập tên chủ xe" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="ownerPhone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Số điện thoại *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Nhập số điện thoại" {...field} />
-                          </FormControl>
+                          <FormLabel>Model *</FormLabel>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={modelsLoading ? 'Đang tải model...' : 'Chọn model'} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {modelsLoading && (
+                                <div className="px-3 py-2 text-sm text-muted-foreground">Đang tải...</div>
+                              )}
+                              {!modelsLoading && vehicleModels.map((model) => (
+                                <SelectItem key={model.id} value={String(model.id)}>
+                                  {model.brandName} {model.modelName}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -508,22 +534,85 @@ export default function VehicleManagementPage() {
                         </FormItem>
                       )}
                     />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="mileage"
+                      name="vin"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Số km *</FormLabel>
+                          <FormLabel>VIN *</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.1" placeholder="Nhập số km" {...field} />
+                            <Input placeholder="Số VIN của xe" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="purchaseDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ngày mua *</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="userId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Chủ xe *</FormLabel>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={usersLoading ? 'Đang tải danh sách...' : 'Chọn chủ xe'} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {usersLoading && (
+                                <div className="px-3 py-2 text-sm text-muted-foreground">Đang tải...</div>
+                              )}
+                              {!usersLoading && users.map((user) => (
+                                <SelectItem key={user.id} value={String(user.id)}>
+                                  {user.fullName} ({user.email})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <FormField
+                      control={form.control}
+                      name="mileage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Số km đã đi</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={0}
+                              step={0.1}
+                              placeholder="VD: 15000"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <FormField
                       control={form.control}
                       name="batteryDegradation"
@@ -535,7 +624,7 @@ export default function VehicleManagementPage() {
                               type="number"
                               min={0}
                               max={100}
-                              step="0.1"
+                              step={0.1}
                               placeholder="0 - 100"
                               {...field}
                             />
@@ -545,29 +634,6 @@ export default function VehicleManagementPage() {
                       )}
                     />
                   </div>
-
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Trạng thái</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="active">Bình thường</SelectItem>
-                            <SelectItem value="maintenance">Đang bảo dưỡng</SelectItem>
-                            <SelectItem value="warning">Cần bảo dưỡng</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </>
               )}
 
