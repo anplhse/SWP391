@@ -127,6 +127,7 @@ export function DashboardLayout({ children, title, user }: DashboardLayoutProps)
           { to: '/service/services', icon: Wrench, label: 'Quản lý dịch vụ' },
           { to: '/service/maintenance', icon: Settings, label: 'Quy trình bảo dưỡng' },
           { to: '/service/parts', icon: Package, label: 'Quản lý phụ tùng' },
+          { to: '/service/vehicle-models', icon: Car, label: 'Quản lý mẫu xe' },
         ];
       case 'technician':
         return [

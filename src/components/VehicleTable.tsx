@@ -98,12 +98,14 @@ export function VehicleTable({
                 </>
               ) : (
                 <>
+                  <TableHead className="px-4">Khách hàng</TableHead>
+                  <TableHead className="px-4">Model</TableHead>
+                  <TableHead className="px-4">VIN</TableHead>
                   <TableHead className="px-4">Biển số</TableHead>
-                  <TableHead className="px-4">Thông tin xe</TableHead>
-                  <TableHead className="px-4">Chủ xe</TableHead>
+                  <TableHead className="px-4">Pin</TableHead>
                   <TableHead className="px-4">Số km</TableHead>
-                  <TableHead className="px-4">Dịch vụ cuối</TableHead>
-                  <TableHead className="px-4">Dịch vụ tiếp</TableHead>
+                  <TableHead className="px-4">Màu</TableHead>
+                  <TableHead className="px-4">Ngày mua</TableHead>
                 </>
               )}
               {showActions && <TableHead className="text-right pr-8 px-4">Thao tác</TableHead>}
@@ -150,30 +152,16 @@ export function VehicleTable({
                     </>
                   ) : (
                     <>
-                      <TableCell className="font-medium px-4">{vehicle.plate}</TableCell>
+                      <TableCell className="px-4">{vehicle.owner || '—'}</TableCell>
+                      <TableCell className="px-4">{vehicle.model}</TableCell>
                       <TableCell className="px-4">
-                        <div className="flex flex-col">
-                          <span className="font-medium">{vehicle.name}</span>
-                          <span className="text-sm text-muted-foreground">{vehicle.model}</span>
-                        </div>
+                        <span className="font-mono text-xs truncate block" title={vehicle.vin}>{vehicle.vin}</span>
                       </TableCell>
-                      <TableCell className="px-4">
-                        <div className="flex flex-col">
-                          <span className="font-medium">{vehicle.owner || '—'}</span>
-                          <span className="text-sm text-muted-foreground">{vehicle.ownerPhone || ''}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-4">{vehicle.mileage == null ? '—' : `${vehicle.mileage.toLocaleString()} km`}</TableCell>
-                      <TableCell className="px-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">{vehicle.lastService ? new Date(vehicle.lastService).toLocaleDateString('vi-VN') : '—'}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">{vehicle.nextService ? new Date(vehicle.nextService).toLocaleDateString('vi-VN') : '—'}</span>
-                        </div>
-                      </TableCell>
+                      <TableCell className="px-4">{vehicle.plate}</TableCell>
+                      <TableCell className="px-4">{vehicle.battery == null ? '—' : `${vehicle.battery}%`}</TableCell>
+                      <TableCell className="px-4">{vehicle.mileage == null ? '—' : `${Number(vehicle.mileage).toLocaleString()} km`}</TableCell>
+                      <TableCell className="px-4">{vehicle.color || '—'}</TableCell>
+                      <TableCell className="px-4">{vehicle.purchaseDate ? new Date(vehicle.purchaseDate).toLocaleDateString('vi-VN') : '—'}</TableCell>
                     </>
                   )}
                   {showActions && (

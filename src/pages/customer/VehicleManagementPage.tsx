@@ -269,22 +269,38 @@ export default function VehicleManagementPage() {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdateVehicle = () => {
+  const handleUpdateVehicle = async () => {
     if (!editingVehicle) return;
+    try {
+      // API chỉ cho phép thay đổi 2 trường: distanceTraveledKm và batteryDegradation
+      const payload = {
+        distanceTraveledKm: typeof editingVehicle.mileage === 'number' ? editingVehicle.mileage : Number(editingVehicle.mileage) || 0,
+        batteryDegradation: typeof editingVehicle.battery === 'number' ? editingVehicle.battery : Number(editingVehicle.battery) || 0,
+      };
 
-    setVehicles(vehicles.map(v =>
-      v.id === editingVehicle.id ? editingVehicle : v
-    ));
+      // Send update by VIN
+      await apiClient.updateVehicle(editingVehicle.vin, payload);
 
-    // Không cập nhật sessionStore
+      // Optimistic UI update
+      setVehicles(vehicles.map(v => (
+        v.id === editingVehicle.id ? { ...v, mileage: editingVehicle.mileage, battery: editingVehicle.battery } : v
+      )));
 
-    setIsEditDialogOpen(false);
-    setEditingVehicle(null);
+      setIsEditDialogOpen(false);
+      setEditingVehicle(null);
 
-    toast({
-      title: "Cập nhật thành công!",
-      description: `Đã cập nhật thông tin ${editingVehicle.name}`,
-    });
+      toast({
+        title: 'Cập nhật thành công!',
+        description: `Đã cập nhật thông tin ${editingVehicle.name}`,
+      });
+    } catch (error) {
+      console.error('Update vehicle failed', error);
+      toast({
+        title: 'Cập nhật thất bại',
+        description: 'Không thể cập nhật xe. Vui lòng thử lại.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleDeleteVehicle = (vehicleId: string) => {
@@ -492,56 +508,91 @@ export default function VehicleManagementPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Chỉnh sửa thông tin xe</DialogTitle>
             <DialogDescription>
-              Cập nhật thông tin chi tiết về xe của bạn
+              Chỉ có thể chỉnh sửa thông tin pin và số km. Các thông tin khác liên quan đến VIN không thể thay đổi.
             </DialogDescription>
           </DialogHeader>
           {editingVehicle && (
-            <div className="grid grid-cols-2 gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Tên xe</Label>
-                <Input
-                  id="edit-name"
-                  value={editingVehicle.name}
-                  onChange={(e) => setEditingVehicle({ ...editingVehicle, name: e.target.value })}
-                />
+            <>
+              {/* Thông tin không thể thay đổi - chỉ hiển thị */}
+              <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                <h4 className="text-sm font-medium text-muted-foreground">Thông tin không thể thay đổi</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Tên xe:</span>
+                    <p className="font-medium">{editingVehicle.name}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Biển số:</span>
+                    <p className="font-medium">{editingVehicle.plate}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Model:</span>
+                    <p className="font-medium">{editingVehicle.model}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Màu sắc:</span>
+                    <p className="font-medium">{editingVehicle.color}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Số VIN:</span>
+                    <p className="font-medium text-xs">{editingVehicle.vin}</p>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-plate">Biển số</Label>
-                <Input
-                  id="edit-plate"
-                  value={editingVehicle.plate}
-                  onChange={(e) => setEditingVehicle({ ...editingVehicle, plate: e.target.value })}
-                />
+
+              {/* Thông tin có thể chỉnh sửa */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium">Thông tin có thể chỉnh sửa</h4>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="edit-battery">Pin (%)</Label>
+                  <Input
+                    id="edit-battery"
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    value={editingVehicle.battery === null || editingVehicle.battery === undefined ? '' : editingVehicle.battery}
+                    onChange={(e) => {
+                      const valStr = e.target.value;
+                      if (valStr === '') {
+                        setEditingVehicle({ ...editingVehicle, battery: null });
+                        return;
+                      }
+                      const val = Number(valStr);
+                      const safe = Math.max(0, Math.min(100, val));
+                      setEditingVehicle({ ...editingVehicle, battery: safe });
+                    }}
+                    placeholder="0 - 100"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-mileage">Số km đã đi</Label>
+                  <Input
+                    id="edit-mileage"
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    value={editingVehicle.mileage === null || editingVehicle.mileage === undefined ? '' : editingVehicle.mileage}
+                    onChange={(e) => {
+                      const valStr = e.target.value;
+                      if (valStr === '') {
+                        setEditingVehicle({ ...editingVehicle, mileage: 0 });
+                        return;
+                      }
+                      const val = Number(valStr);
+                      setEditingVehicle({ ...editingVehicle, mileage: isNaN(val) || val < 0 ? 0 : val });
+                    }}
+                    placeholder="Nhập số km"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-model">Model</Label>
-                <Input
-                  id="edit-model"
-                  value={editingVehicle.model}
-                  onChange={(e) => setEditingVehicle({ ...editingVehicle, model: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-color">Màu sắc</Label>
-                <Input
-                  id="edit-color"
-                  value={editingVehicle.color}
-                  onChange={(e) => setEditingVehicle({ ...editingVehicle, color: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-vin">VIN</Label>
-                <Input
-                  id="edit-vin"
-                  value={editingVehicle.vin}
-                  onChange={(e) => setEditingVehicle({ ...editingVehicle, vin: e.target.value })}
-                />
-              </div>
-            </div>
+            </>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>

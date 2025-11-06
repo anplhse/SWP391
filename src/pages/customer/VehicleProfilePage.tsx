@@ -102,16 +102,26 @@ export default function VehicleProfilePage() {
     setIsEditDialogOpen(true);
   };
 
-  const handleEditSubmit = (data: VehicleEditFormData) => {
-    // Trong thực tế, đây sẽ là API call
-    console.log('Updating vehicle data:', data);
+  const handleEditSubmit = async (data: VehicleEditFormData) => {
+    if (!vehicleData) return;
+    try {
+      await apiClient.updateVehicle(vehicleData.vin, {
+        distanceTraveledKm: data.mileage,
+        batteryDegradation: data.battery,
+      });
 
-    toast({
-      title: "Cập nhật thành công",
-      description: "Thông tin xe đã được cập nhật."
-    });
+      // Update local state to reflect changes
+      setVehicleData({ ...vehicleData, mileage: data.mileage, battery: data.battery });
 
-    setIsEditDialogOpen(false);
+      toast({
+        title: 'Cập nhật thành công',
+        description: 'Thông tin xe đã được cập nhật.'
+      });
+      setIsEditDialogOpen(false);
+    } catch (e) {
+      console.error('Failed to update vehicle', e);
+      toast({ title: 'Cập nhật thất bại', description: 'Không thể cập nhật xe.', variant: 'destructive' });
+    }
   };
 
   const handleDeleteConfirm = () => {
