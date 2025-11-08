@@ -3,6 +3,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import {
   Accordion,
   AccordionContent,
@@ -12,6 +14,78 @@ import {
 
 export default function Contact() {
   const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    service: '',
+    message: ''
+  });
+
+  // Check if redirected back with success parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      toast.success('EV Service Center', {
+        description: 'Cảm ơn bạn đã liên hệ! Chúng tôi đã nhận được thông tin và sẽ phản hồi sớm nhất.',
+        duration: 5000,
+      });
+      // Remove success parameter from URL
+      window.history.replaceState({}, '', '/contact');
+    }
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent default form submission
+    
+    toast.info('EV Service Center', {
+      description: 'Đang gửi thông tin... Vui lòng đợi trong giây lát.',
+      duration: 3000,
+    });
+    
+    try {
+      const formElement = e.target as HTMLFormElement;
+      const formDataToSend = new FormData(formElement);
+      
+      const response = await fetch('https://formsubmit.co/ajax/dengocrong123@gmail.com', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          'Họ tên': formData.name,
+          'Email': formData.email,
+          'Số điện thoại': formData.phone,
+          'Dịch vụ': formData.service,
+          'Yêu cầu': formData.message,
+        })
+      });
+      
+      if (response.ok) {
+        toast.success('EV Service Center', {
+          description: 'Cảm ơn bạn đã liên hệ! Chúng tôi đã nhận được thông tin và sẽ phản hồi sớm nhất.',
+          duration: 5000,
+        });
+        
+        // Reset form
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          service: '',
+          message: ''
+        });
+      } else {
+        throw new Error('Gửi thất bại');
+      }
+    } catch (error) {
+      toast.error('EV Service Center', {
+        description: 'Có lỗi xảy ra. Vui lòng thử lại hoặc liên hệ trực tiếp qua Zalo: 0396727248',
+        duration: 5000,
+      });
+    }
+  };
   
   return (
     <div className="min-h-screen text-foreground relative overflow-x-hidden">
@@ -88,18 +162,23 @@ export default function Contact() {
               <h3 className="text-xl font-bold mb-6 text-gray-900">LIÊN HỆ NGAY VỚI CHÚNG TÔI!</h3>
               
               {/* Zalo Button */}
-              <button className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-semibold py-4 px-6 rounded-xl mb-4 flex items-center justify-between shadow-lg hover:shadow-xl transition-all duration-300">
+              <a 
+                href="https://zalo.me/0396727248"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-semibold py-4 px-6 rounded-xl mb-4 flex items-center justify-between shadow-lg hover:shadow-xl transition-all duration-300"
+              >
                 <span>Nhắn tin qua Zalo</span>
                 <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
                   <span className="text-blue-600 font-bold">Z</span>
                 </div>
-              </button>
+              </a>
 
               {/* Hotline Button */}
               <button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-4 px-6 rounded-xl mb-4 flex items-center justify-between shadow-lg hover:shadow-xl transition-all duration-300">
                 <div>
                   <div>Gọi ngay hotline</div>
-                  <div className="text-sm">0396727212</div>
+                  <div className="text-sm">0396727248</div>
                 </div>
                 <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
                   <span className="text-blue-600">📞</span>
@@ -107,52 +186,78 @@ export default function Contact() {
               </button>
 
               {/* Messenger Button */}
-              <button className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-between">
+              <a
+                href="https://m.me/tran.tuan.895160"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-between"
+              >
                 <span>Nhắn tin qua Messenger</span>
                 <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
                   <span className="text-purple-600">💬</span>
                 </div>
-              </button>
+              </a>
             </div>
           </div>
 
           {/* Right Side - Contact Form */}
           <div className="bg-gradient-to-br from-gray-700 to-gray-900 rounded-2xl p-8 shadow-2xl">
-            <form className="space-y-4">
+            <form 
+              className="space-y-4" 
+              onSubmit={handleSubmit}
+            >
               <div>
                 <Input 
+                  name="Họ tên"
                   placeholder="Họ và tên của bạn" 
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
                   className="bg-white/10 border-white/20 text-white placeholder:text-gray-300 focus:bg-white/20"
+                  required
                 />
               </div>
               <div>
                 <Input 
+                  name="Email"
                   placeholder="Email của bạn" 
                   type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
                   className="bg-white/10 border-white/20 text-white placeholder:text-gray-300 focus:bg-white/20"
                 />
               </div>
               <div>
                 <Input 
+                  name="Số điện thoại"
                   placeholder="Số điện thoại của bạn" 
                   type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
                   className="bg-white/10 border-white/20 text-white placeholder:text-gray-300 focus:bg-white/20"
                 />
               </div>
               <div>
-                <select className="w-full bg-white/10 border border-white/20 text-gray-300 rounded-md px-3 py-2 focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-primary">
+                <select 
+                  name="Dịch vụ"
+                  className="w-full bg-white/10 border border-white/20 text-gray-300 rounded-md px-3 py-2 focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={formData.service}
+                  onChange={(e) => setFormData({...formData, service: e.target.value})}
+                >
                   <option value="">—Vui lòng chọn—</option>
-                  <option value="service">Dịch vụ sửa chữa</option>
-                  <option value="maintenance">Bảo dưỡng định kỳ</option>
-                  <option value="parts">Linh kiện phụ tùng</option>
-                  <option value="consultation">Tư vấn</option>
-                  <option value="other">Khác</option>
+                  <option value="Dịch vụ sửa chữa">Dịch vụ sửa chữa</option>
+                  <option value="Bảo dưỡng định kỳ">Bảo dưỡng định kỳ</option>
+                  <option value="Linh kiện phụ tùng">Linh kiện phụ tùng</option>
+                  <option value="Tư vấn">Tư vấn</option>
+                  <option value="Khác">Khác</option>
                 </select>
               </div>
               <div>
                 <Textarea 
+                  name="Yêu cầu"
                   placeholder="Yêu cầu của bạn (Nếu có)..." 
                   rows={4}
+                  value={formData.message}
+                  onChange={(e) => setFormData({...formData, message: e.target.value})}
                   className="bg-white/10 border-white/20 text-white placeholder:text-gray-300 focus:bg-white/20 resize-none"
                 />
               </div>
