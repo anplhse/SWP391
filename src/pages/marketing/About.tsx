@@ -143,6 +143,15 @@ export default function About() {
           }
         }
         
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-15px);
+          }
+        }
+        
         @keyframes driveCar1 {
           0% {
             transform: translateX(-100px);
@@ -252,45 +261,15 @@ export default function About() {
 
       <main className="mx-auto max-w-6xl px-4 py-14 space-y-8 relative z-20">
         <div className="relative">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 relative z-20">Giới thiệu</h1>
-          
-          {/* 3D Cloud behind title */}
-          <div 
-            className="absolute -top-8 -left-16 w-[400px] h-[180px] z-10 pointer-events-none"
-            style={{
-              animation: 'float3d 8s ease-in-out infinite',
+          <h1 
+            className="text-4xl md:text-5xl font-bold text-gray-900 mb-2"
+            style={{ 
+              fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
+              letterSpacing: '-0.02em'
             }}
           >
-            <div className="relative w-full h-full">
-              {/* Main cloud body with multiple layers for 3D effect */}
-              <div className="absolute inset-0" style={{
-                background: 'radial-gradient(ellipse at 30% 40%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 50%, transparent 100%)',
-                filter: 'blur(20px)',
-                transform: 'translateY(10px)',
-              }}></div>
-              
-              <svg viewBox="0 0 400 180" className="w-full h-full drop-shadow-2xl" style={{
-                filter: 'drop-shadow(0 15px 30px rgba(0,0,0,0.3)) drop-shadow(0 5px 15px rgba(0,0,0,0.2))',
-              }}>
-                {/* Bottom shadow layer */}
-                <ellipse cx="200" cy="140" rx="150" ry="20" fill="rgba(0,0,0,0.15)" />
-                
-                {/* Cloud shape - multiple circles for fluffy effect */}
-                <circle cx="100" cy="90" r="50" fill="rgba(255,255,255,0.95)" />
-                <circle cx="150" cy="70" r="60" fill="rgba(255,255,255,0.98)" />
-                <circle cx="200" cy="80" r="55" fill="white" />
-                <circle cx="250" cy="75" r="58" fill="rgba(255,255,255,0.97)" />
-                <circle cx="290" cy="95" r="45" fill="rgba(255,255,255,0.93)" />
-                
-                {/* Lighter highlights on top */}
-                <circle cx="160" cy="60" r="35" fill="rgba(255,255,255,0.6)" opacity="0.8" />
-                <circle cx="220" cy="65" r="30" fill="rgba(255,255,255,0.5)" opacity="0.7" />
-                
-                {/* Subtle shadow inside cloud */}
-                <ellipse cx="200" cy="110" rx="120" ry="30" fill="rgba(200,200,220,0.2)" />
-              </svg>
-            </div>
-          </div>
+            Giới thiệu
+          </h1>
         </div>
         
         <div className="space-y-6 text-gray-900 text-lg md:text-xl leading-relaxed relative z-20">
@@ -303,19 +282,53 @@ export default function About() {
             Chào mừng đến với EV Service Center
           </h1>
 
-          <p>
-            Nền tảng quản lý được thiết kế để chuẩn hóa và tối ưu hóa toàn bộ quy trình vận hành của một trung tâm dịch vụ xe điện hiện đại. 
-            Chúng tôi mang đến một giải pháp giúp bạn loại bỏ mọi phiền phức trong vận hành và tập trung vào điều quan trọng nhất: 
-            phát triển kinh doanh và chăm sóc khách hàng.
-          </p>
-          <p>Với EV Service Center, đây là những gì bạn sẽ thấy mỗi ngày: </p>
-          <p>
-            Trải nghiệm tiếp nhận xe chuyên nghiệp,nơi bạn chỉ cần nhập số VIN và mọi thông tin xe cùng lịch sử bảo dưỡng của khách hàng ngay lập tức xuất hiện. 
-            Lịch hẹn của bạn sẽ được lấp đầy một cách tự động; hệ thống sẽ thay bạn gửi thông báo nhắc lịch bảo dưỡng định kỳ 
-            (mỗi 10.000 km hoặc 6 tháng), đảm bảo khách hàng luôn quay lại. Khách hàng của bạn sẽ yêu thích sự tiện lợi khi có thể 
-            tự đặt lịch hẹn trực tuyến, và tuyệt vời nhất, họ có thể theo dõi trạng thái xe của mình theo thời gian thực mà không cần 
-            gọi điện hỏi thăm.
-          </p>
+          <div className="space-y-6 bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-orange-100">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">Mọi Tiện ích trong Tay Bạn</h3>
+                <p className="text-gray-700 leading-relaxed text-lg">
+                  Chào mừng bạn đến với trải nghiệm bảo dưỡng xe điện thế hệ mới. Với ứng dụng của EV Service Center, bạn có thể hoàn toàn chủ động quản lý chiếc xe của mình: từ đặt lịch hẹn 24/7, theo dõi tiến độ sửa chữa, cho đến truy cập toàn bộ lịch sử bảo dưỡng ngay trên điện thoại.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-md border border-blue-200 hover:shadow-lg transition-all duration-300">
+                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mb-3">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h4 className="font-bold text-gray-900 mb-2 text-lg">Tiết kiệm thời gian</h4>
+                <p className="text-gray-600 text-sm leading-relaxed">Đặt lịch online 24/7, không cần gọi điện. Nhận thông báo tự động khi đến kỳ bảo dưỡng</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-md border border-green-200 hover:shadow-lg transition-all duration-300">
+                <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center mb-3">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h4 className="font-bold text-gray-900 mb-2 text-lg">Minh bạch hoàn toàn</h4>
+                <p className="text-gray-600 text-sm leading-relaxed">Theo dõi tiến độ sửa chữa real-time trên điện thoại. Biết chính xác xe đang ở bước nào</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 shadow-md border border-purple-200 hover:shadow-lg transition-all duration-300">
+                <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center mb-3">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h4 className="font-bold text-gray-900 mb-2 text-lg">Lịch sử không bao giờ mất</h4>
+                <p className="text-gray-600 text-sm leading-relaxed">Toàn bộ hồ sơ bảo dưỡng được lưu trữ điện tử. Giúp giữ giá xe khi bán lại</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* EV Infrastructure Section */}
@@ -338,93 +351,189 @@ export default function About() {
               <div className="absolute top-0 left-0 right-0 h-1 bg-white/30"></div>
             </div>
 
-            {/* VinFast Service Center - Modern Design */}
-            <div className="absolute bottom-32 left-[8%] z-20">
+            {/* Mobile App Mockup - Center spotlight */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30" style={{ animation: 'float 3s ease-in-out infinite' }}>
               <div className="relative">
-                {/* Building with red accent like VinFast */}
-                <div className="relative">
-                  {/* Main building */}
-                  <div className="w-40 h-32 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-900 rounded-t-2xl shadow-2xl relative overflow-hidden">
-                    {/* Red VinFast stripe */}
-                    <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-r from-red-600 to-red-500 flex items-center justify-center">
-                      <span className="text-white font-bold text-sm tracking-wider">VINFAST SERVICE</span>
-                    </div>
-                    {/* Glass windows effect */}
-                    <div className="absolute top-10 left-2 right-2 bottom-2 bg-gradient-to-b from-blue-200/40 to-blue-300/20 rounded backdrop-blur-sm">
-                      <div className="grid grid-cols-4 gap-1 p-2">
-                        <div className="h-4 bg-blue-100/60 rounded shadow-inner"></div>
-                        <div className="h-4 bg-blue-100/60 rounded shadow-inner"></div>
-                        <div className="h-4 bg-blue-100/60 rounded shadow-inner"></div>
-                        <div className="h-4 bg-blue-100/60 rounded shadow-inner"></div>
-                        <div className="h-4 bg-blue-100/60 rounded shadow-inner"></div>
-                        <div className="h-4 bg-blue-100/60 rounded shadow-inner"></div>
-                        <div className="h-4 bg-blue-100/60 rounded shadow-inner"></div>
-                        <div className="h-4 bg-blue-100/60 rounded shadow-inner"></div>
+                {/* Phone Frame - Larger size */}
+                <div className="w-48 h-96 bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-[2.5rem] shadow-2xl p-2 border-3 border-gray-700">
+                  {/* Screen */}
+                  <div className="w-full h-full bg-white rounded-[2rem] overflow-hidden relative">
+                    {/* Status Bar */}
+                    <div className="h-7 bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-between px-4">
+                      <div className="flex gap-1">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
                       </div>
+                      <span className="text-[10px] text-white font-bold">100%</span>
                     </div>
-                    {/* Garage door */}
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-16 bg-gradient-to-b from-gray-900 to-black rounded-t-lg border-2 border-gray-600">
-                      <div className="grid grid-rows-4 gap-1 p-1 h-full">
-                        <div className="bg-gray-700/50 rounded-sm"></div>
-                        <div className="bg-gray-700/50 rounded-sm"></div>
-                        <div className="bg-gray-700/50 rounded-sm"></div>
-                        <div className="bg-gray-700/50 rounded-sm"></div>
+                    
+                    {/* App Content - Progress Tracking */}
+                    <div className="p-4 space-y-3">
+                      {/* Header */}
+                      <div className="text-center">
+                        <h4 className="text-sm font-bold text-gray-900">Theo dõi Tiến độ</h4>
+                        <p className="text-[10px] text-gray-500 mt-0.5">VF8 - 51A-123.45</p>
+                      </div>
+                      
+                      {/* Progress Steps */}
+                      <div className="space-y-3 mt-4">
+                        {/* Step 1 - Completed */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 shadow-md">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs font-semibold text-gray-900">Tiếp nhận xe</p>
+                            <p className="text-[10px] text-gray-500">Hoàn thành 09:30</p>
+                          </div>
+                        </div>
+                        
+                        {/* Step 2 - In Progress */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center flex-shrink-0 relative shadow-lg">
+                            <div className="absolute inset-0 rounded-full bg-orange-400 animate-ping opacity-75"></div>
+                            <div className="w-3 h-3 bg-white rounded-full relative z-10"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs font-semibold text-orange-600">Đang kiểm tra</p>
+                            <p className="text-[10px] text-gray-500">KTV: Nguyễn Văn A</p>
+                          </div>
+                        </div>
+                        
+                        {/* Step 3 - Pending */}
+                        <div className="flex items-center gap-3 opacity-50">
+                          <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+                            <div className="w-3 h-3 bg-white rounded-full"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs font-semibold text-gray-900">Bảo dưỡng</p>
+                            <p className="text-[10px] text-gray-500">Dự kiến: 45 phút</p>
+                          </div>
+                        </div>
+                        
+                        {/* Step 4 - Pending */}
+                        <div className="flex items-center gap-3 opacity-50">
+                          <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+                            <div className="w-3 h-3 bg-white rounded-full"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs font-semibold text-gray-900">Hoàn tất</p>
+                            <p className="text-[10px] text-gray-500">Chờ xử lý</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Bottom Button */}
+                      <div className="pt-2">
+                        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl py-2.5 text-center shadow-lg">
+                          <span className="text-xs text-white font-bold">Xem chi tiết</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                  {/* Sign board */}
-                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gradient-to-r from-red-600 to-red-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-xl border-2 border-red-400 whitespace-nowrap">
-                    🔧 XƯỞNG DỊCH VỤ
-                  </div>
+                  
+                  {/* Home Button */}
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-16 h-1 bg-gray-700 rounded-full"></div>
+                </div>
+                
+                {/* Floating Label */}
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold px-4 py-1.5 rounded-lg shadow-xl whitespace-nowrap">
+                  📱 Ứng dụng EV Service Center
                 </div>
               </div>
             </div>
 
-            {/* Modern Charging Station 1 - Blue/White theme */}
-            <div className="absolute bottom-32 left-[42%] z-20">
-              <div className="relative">
-                {/* Charging pole */}
-                <div className="w-12 h-28 bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 rounded-2xl shadow-2xl relative overflow-hidden border-2 border-blue-400">
-                  {/* Screen display */}
-                  <div className="absolute top-3 left-1/2 -translate-x-1/2 w-8 h-8 bg-gradient-to-br from-cyan-300 to-blue-200 rounded-lg flex items-center justify-center shadow-inner">
-                    <div className="text-xs font-bold text-blue-900">⚡</div>
-                  </div>
-                  {/* Charging cable */}
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-2 h-8 bg-gray-800 rounded-full"></div>
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-3 bg-gray-700 rounded-t"></div>
-                  {/* LED indicators */}
-                  <div className="absolute top-14 left-1/2 -translate-x-1/2 flex gap-1">
-                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-                  </div>
-                </div>
-                {/* Sign */}
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-blue-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap border border-blue-400">
-                  ⚡ TRẠM SẠC
-                </div>
-              </div>
+            {/* Trees - Realistic style with planters */}
+            {/* Tree 1 with planter */}
+            <div className="absolute bottom-32 left-[30%] z-15">
+              <svg width="90" height="126" viewBox="0 0 150 210" className="drop-shadow-2xl">
+                {/* Flower planter */}
+                <ellipse cx="75" cy="200" rx="35" ry="8" fill="#8B4513" opacity="0.3"/>
+                <path d="M45 195 Q42 200 45 205 L105 205 Q108 200 105 195 Z" fill="#CD853F"/>
+                <path d="M48 195 Q46 200 48 205 L102 205 Q104 200 102 195 Z" fill="#DEB887"/>
+                <ellipse cx="75" cy="195" rx="27" ry="6" fill="#8B7355"/>
+                {/* Soil */}
+                <ellipse cx="75" cy="192" rx="25" ry="5" fill="#654321"/>
+                
+                {/* Trunk */}
+                <path d="M66 135 L72 200 L78 200 L84 135 Q75 132 66 135" fill="#654321" />
+                <rect x="69" y="135" width="12" height="65" fill="#7D5A3D" opacity="0.6"/>
+                
+                {/* Foliage - natural canopy */}
+                <ellipse cx="75" cy="105" rx="54" ry="48" fill="#2D5016" opacity="0.8"/>
+                <ellipse cx="75" cy="84" rx="48" ry="42" fill="#3A6B1F"/>
+                <ellipse cx="75" cy="66" rx="42" ry="36" fill="#4A8C2A"/>
+                <ellipse cx="75" cy="54" rx="33" ry="30" fill="#5FA836"/>
+                {/* Light spots */}
+                <ellipse cx="84" cy="75" rx="18" ry="15" fill="#7BC142" opacity="0.7"/>
+                <ellipse cx="60" cy="90" rx="15" ry="12" fill="#6FB037" opacity="0.6"/>
+              </svg>
             </div>
 
-            {/* Modern Charging Station 2 - Green theme */}
-            <div className="absolute bottom-32 right-[22%] z-20">
-              <div className="relative">
-                <div className="w-12 h-28 bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 rounded-2xl shadow-2xl relative overflow-hidden border-2 border-emerald-400">
-                  <div className="absolute top-3 left-1/2 -translate-x-1/2 w-8 h-8 bg-gradient-to-br from-green-300 to-emerald-200 rounded-lg flex items-center justify-center shadow-inner">
-                    <div className="text-xs font-bold text-green-900">⚡</div>
-                  </div>
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-2 h-8 bg-gray-800 rounded-full"></div>
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-3 bg-gray-700 rounded-t"></div>
-                  <div className="absolute top-14 left-1/2 -translate-x-1/2 flex gap-1">
-                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-                  </div>
-                </div>
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap border border-emerald-400">
-                  ⚡ TRẠM SẠC
-                </div>
-              </div>
+            {/* Tree 2 with planter */}
+            <div className="absolute bottom-32 left-[42%] z-15">
+              <svg width="86" height="122" viewBox="0 0 144 204" className="drop-shadow-2xl">
+                <ellipse cx="72" cy="194" rx="33" ry="8" fill="#8B4513" opacity="0.3"/>
+                <path d="M43 189 Q40 194 43 199 L101 199 Q104 194 101 189 Z" fill="#CD853F"/>
+                <path d="M46 189 Q44 194 46 199 L98 199 Q100 194 98 189 Z" fill="#DEB887"/>
+                <ellipse cx="72" cy="189" rx="26" ry="6" fill="#8B7355"/>
+                <ellipse cx="72" cy="186" rx="24" ry="5" fill="#654321"/>
+                
+                <path d="M63 129 L69 194 L75 194 L81 129 Q72 126 63 129" fill="#5C4033" />
+                <rect x="66" y="129" width="12" height="65" fill="#6D4C41" opacity="0.6"/>
+                
+                <ellipse cx="72" cy="99" rx="51" ry="45" fill="#2D5016" opacity="0.8"/>
+                <ellipse cx="72" cy="81" rx="45" ry="39" fill="#3A6B1F"/>
+                <ellipse cx="72" cy="63" rx="39" ry="33" fill="#4A8C2A"/>
+                <ellipse cx="72" cy="51" rx="30" ry="27" fill="#5FA836"/>
+                <ellipse cx="81" cy="72" rx="15" ry="12" fill="#7BC142" opacity="0.7"/>
+                <ellipse cx="57" cy="84" rx="12" ry="9" fill="#6FB037" opacity="0.6"/>
+              </svg>
+            </div>
+
+            {/* Tree 3 with planter */}
+            <div className="absolute bottom-32 right-[32%] z-15">
+              <svg width="94" height="130" viewBox="0 0 156 216" className="drop-shadow-2xl">
+                <ellipse cx="78" cy="206" rx="37" ry="8" fill="#8B4513" opacity="0.3"/>
+                <path d="M47 201 Q44 206 47 211 L109 211 Q112 206 109 201 Z" fill="#CD853F"/>
+                <path d="M50 201 Q48 206 50 211 L106 211 Q108 206 106 201 Z" fill="#DEB887"/>
+                <ellipse cx="78" cy="201" rx="28" ry="6" fill="#8B7355"/>
+                <ellipse cx="78" cy="198" rx="26" ry="5" fill="#654321"/>
+                
+                <path d="M69 138 L75 206 L81 206 L87 138 Q78 135 69 138" fill="#654321" />
+                <rect x="72" y="138" width="12" height="68" fill="#7D5A3D" opacity="0.6"/>
+                
+                <ellipse cx="78" cy="108" rx="57" ry="51" fill="#2D5016" opacity="0.8"/>
+                <ellipse cx="78" cy="87" rx="51" ry="45" fill="#3A6B1F"/>
+                <ellipse cx="78" cy="69" rx="45" ry="39" fill="#4A8C2A"/>
+                <ellipse cx="78" cy="57" rx="36" ry="33" fill="#5FA836"/>
+                <ellipse cx="87" cy="78" rx="18" ry="15" fill="#7BC142" opacity="0.7"/>
+                <ellipse cx="63" cy="93" rx="15" ry="12" fill="#6FB037" opacity="0.6"/>
+              </svg>
+            </div>
+
+            {/* Tree 4 with planter */}
+            <div className="absolute bottom-32 right-[20%] z-15">
+              <svg width="83" height="119" viewBox="0 0 138 198" className="drop-shadow-2xl">
+                <ellipse cx="69" cy="188" rx="31" ry="8" fill="#8B4513" opacity="0.3"/>
+                <path d="M41 183 Q38 188 41 193 L97 193 Q100 188 97 183 Z" fill="#CD853F"/>
+                <path d="M44 183 Q42 188 44 193 L94 193 Q96 188 94 183 Z" fill="#DEB887"/>
+                <ellipse cx="69" cy="183" rx="25" ry="6" fill="#8B7355"/>
+                <ellipse cx="69" cy="180" rx="23" ry="5" fill="#654321"/>
+                
+                <path d="M60 126 L66 188 L72 188 L78 126 Q69 123 60 126" fill="#5C4033" />
+                <rect x="63" y="126" width="12" height="62" fill="#6D4C41" opacity="0.6"/>
+                
+                <ellipse cx="69" cy="96" rx="48" ry="42" fill="#2D5016" opacity="0.8"/>
+                <ellipse cx="69" cy="78" rx="42" ry="36" fill="#3A6B1F"/>
+                <ellipse cx="69" cy="60" rx="36" ry="30" fill="#4A8C2A"/>
+                <ellipse cx="69" cy="48" rx="27" ry="24" fill="#5FA836"/>
+                <ellipse cx="78" cy="69" rx="15" ry="12" fill="#7BC142" opacity="0.7"/>
+                <ellipse cx="54" cy="81" rx="12" ry="9" fill="#6FB037" opacity="0.6"/>
+              </svg>
             </div>
 
             {/* Modern VinFast EV Car 1 - Silver/White */}
