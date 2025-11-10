@@ -201,7 +201,7 @@ export default function Contact() {
           </div>
 
           {/* Right Side - Contact Form */}
-          <div className="bg-gradient-to-br from-gray-700 to-gray-900 rounded-2xl p-8 shadow-2xl">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl border border-gray-200">
             <form 
               className="space-y-4" 
               onSubmit={handleSubmit}
@@ -212,7 +212,7 @@ export default function Contact() {
                   placeholder="Họ và tên của bạn" 
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-300 focus:bg-white/20"
+                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                   required
                 />
               </div>
@@ -223,7 +223,7 @@ export default function Contact() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-300 focus:bg-white/20"
+                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                 />
               </div>
               <div>
@@ -233,13 +233,13 @@ export default function Contact() {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-300 focus:bg-white/20"
+                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
                 />
               </div>
               <div>
                 <select 
                   name="Dịch vụ"
-                  className="w-full bg-white/10 border border-white/20 text-gray-300 rounded-md px-3 py-2 focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full bg-white border border-gray-300 text-gray-900 rounded-md px-3 py-2 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   value={formData.service}
                   onChange={(e) => setFormData({...formData, service: e.target.value})}
                 >
@@ -258,7 +258,7 @@ export default function Contact() {
                   rows={4}
                   value={formData.message}
                   onChange={(e) => setFormData({...formData, message: e.target.value})}
-                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-300 focus:bg-white/20 resize-none"
+                  className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 resize-none"
                 />
               </div>
               <Button 
