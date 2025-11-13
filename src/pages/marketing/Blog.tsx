@@ -23,7 +23,7 @@ export default function Blog() {
       
       <main className="mx-auto max-w-7xl px-4 py-14 relative z-20">
         {/* Hero Section */}
-        <div className="mb-20 md:mb-28 text-center" style={{ animation: 'fadeInUp 0.8s ease-out' }}>
+        <div className="mb-16 md:mb-20 text-center" style={{ animation: 'fadeInUp 0.8s ease-out' }}>
           <div className="inline-block mb-4">
             <span className="px-5 py-2 bg-white/20 backdrop-blur-sm text-white text-sm font-semibold rounded-full border border-white/30 shadow-lg">
               📚 Kiến thức xe điện
@@ -40,9 +40,6 @@ export default function Blog() {
           >
             Blog
           </h1>
-          <p className="text-white/95 text-xl mt-5 font-medium max-w-2xl mx-auto leading-relaxed">
-            Cập nhật kiến thức mới nhất về bảo dưỡng, công nghệ và mẹo sử dụng xe điện hiệu quả
-          </p>
         </div>
 
         {/* Featured Post */}

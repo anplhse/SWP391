@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/lib/api';
-import { Plus } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -74,7 +74,7 @@ export default function CustomerManagementPage() {
           roleDisplayName: u.roleDisplayName,
           createdAt: u.createdAt,
           lastLogin: u.lastLogin,
-          status: (u.status as any) ?? 'ACTIVE'
+          status: (u.status as Customer['status']) ?? 'ACTIVE'
         }));
         setCustomers(mapped);
         setAvailableRoles(roles.enumValue || []);
@@ -170,16 +170,17 @@ export default function CustomerManagementPage() {
         roleDisplayName: u.roleDisplayName,
         createdAt: u.createdAt,
         lastLogin: u.lastLogin,
-        status: (u.status as any) ?? 'ACTIVE'
+        status: (u.status as Customer['status']) ?? 'ACTIVE'
       }));
       setCustomers(mapped);
 
       setIsDialogOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to update user profile', error);
+      const errorMessage = error instanceof Error ? error.message : "Không thể cập nhật thông tin. Vui lòng thử lại.";
       toast({
         title: "Lỗi",
-        description: error?.message || "Không thể cập nhật thông tin. Vui lòng thử lại.",
+        description: errorMessage,
         variant: "destructive"
       });
     }

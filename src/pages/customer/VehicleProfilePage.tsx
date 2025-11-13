@@ -20,9 +20,9 @@ import {
   Download,
   Edit,
   History,
-  Trash2,
   MapPin,
   Settings,
+  Trash2,
   Wrench
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -171,15 +171,15 @@ export default function VehicleProfilePage() {
 
           const mapped: Vehicle = {
             id: apiV.vin,
-            name: apiV.brand ? `${apiV.brand} ${apiV.model}` : (apiV.model || apiV.vin),
-            plate: apiV.plate || '-',
-            model: apiV.model || '-',
+            name: apiV.name || apiV.modelName || apiV.vin,
+            plate: apiV.plateNumber || '-',
+            model: apiV.modelName || '-',
             battery: enrichedBattery,
             nextService: new Date().toISOString().split('T')[0],
             mileage: enrichedMileage,
-            color: apiV.type || '-',
+            color: apiV.color || '-',
             vin: apiV.vin,
-            purchaseDate: new Date().toISOString().split('T')[0],
+            purchaseDate: (apiV.purchasedAt || '').split('T')[0] || new Date().toISOString().split('T')[0],
           };
           if (mounted) setVehicleData(mapped);
           return;

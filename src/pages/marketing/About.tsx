@@ -83,7 +83,7 @@ export default function About() {
       </div>
 
       <main className="mx-auto max-w-6xl px-4 py-14 space-y-24 md:space-y-32 relative z-20">
-        <div className="text-center space-y-4 mb-20 md:mb-24" style={{ animation: 'fadeInUp 1s ease-out' }}>
+        <div className="text-center space-y-4 mb-4 md:mb-6" style={{ animation: 'fadeInUp 1s ease-out' }}>
           <h1 
             className="text-5xl md:text-7xl font-bold text-white mb-4 inline-block"
             style={{ 
@@ -100,7 +100,7 @@ export default function About() {
           </p>
         </div>
         
-        <div className="space-y-20 relative z-20">
+        <div className="space-y-28 md:space-y-36 relative z-20 -mt-16 md:-mt-20">
           <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 md:p-12 shadow-2xl border-2 border-white/50 hover:shadow-[0_20px_60px_rgba(0,0,0,0.3)] transition-all duration-500 hover:scale-[1.01]" style={{ animation: 'fadeInUp 1.4s ease-out' }}>
             <div className="flex items-start gap-6">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 via-orange-600 to-red-500 flex items-center justify-center flex-shrink-0 shadow-xl" style={{ animation: 'pulse 2s ease-in-out infinite' }}>
@@ -153,7 +153,7 @@ export default function About() {
         </div>
 
         {/* Mobile App Demo Section */}
-        <div className="mt-32 md:mt-44 relative">
+        <div className="mt-40 md:mt-52 relative">
           <div className="relative h-80 bg-gradient-to-b from-blue-100 to-blue-50 rounded-3xl overflow-hidden shadow-2xl">
             {/* Mobile App Mockup */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ animation: 'floatSlow 6s ease-in-out infinite' }}>
@@ -331,7 +331,7 @@ export default function About() {
         </div>
 
         {/* Testimonials Section */}
-        <div className="mt-32 md:mt-44 space-y-8" style={{ animation: 'fadeInUp 2.2s ease-out' }}>
+        <div className="mt-40 md:mt-52 space-y-8" style={{ animation: 'fadeInUp 2.2s ease-out' }}>
           <h2 className="text-4xl md:text-5xl font-bold text-white text-center mb-24" style={{ 
             textShadow: '0 4px 20px rgba(0,0,0,0.3)',
             animation: 'glow 3s ease-in-out infinite alternate'
@@ -403,7 +403,7 @@ export default function About() {
         </div>
 
         {/* CTA Section */}
-        <div className="mt-32 md:mt-44 mb-12" style={{ animation: 'fadeInUp 2.4s ease-out' }}>
+        <div className="mt-40 md:mt-52 mb-12" style={{ animation: 'fadeInUp 2.4s ease-out' }}>
           <div className="bg-primary rounded-3xl p-12 md:p-16 shadow-2xl text-center hover:shadow-[0_30px_70px_rgba(255,126,95,0.4)] transition-all duration-500 hover:scale-[1.02]">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6" style={{ 
               textShadow: '0 2px 8px rgba(0,0,0,0.2)'

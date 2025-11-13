@@ -46,7 +46,7 @@ export default function Services() {
       
       <main className="mx-auto max-w-6xl px-4 py-14 relative z-20">
         {/* Hero Section */}
-        <div className="mb-20 md:mb-28 text-center" style={{ animation: 'fadeInUp 0.8s ease-out' }}>
+        <div className="mb-12 md:mb-16 text-center" style={{ animation: 'fadeInUp 0.8s ease-out' }}>
           <h1 className="text-5xl md:text-7xl font-extrabold mb-4 relative inline-block">
             <span 
               className="text-white drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)]"
