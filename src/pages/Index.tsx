@@ -32,7 +32,7 @@ const Index = () => {
       </header>
 
       {/* Hero image centered with top padding */}
-      <section className="mx-auto max-w-6xl px-4 pt-6 md:pt-8 mb-16 md:mb-20">
+      <section className="mx-auto max-w-6xl px-4 pt-6 md:pt-8">
         <img
           src="/a.jpg"
           alt="Hình minh họa trung tâm dịch vụ"
@@ -48,7 +48,7 @@ const Index = () => {
       {/* Services */}
       <section id="features" className="bg-muted/30">
         <div className="mx-auto max-w-[90rem] px-4 py-16 md:py-20">
-          <h2 className="text-2xl md:text-3xl font-semibold text-center mb-12 md:mb-16">Dịch vụ nổi bật</h2>
+          <h2 className="text-2xl md:text-3xl font-semibold text-center mb-10">Dịch vụ nổi bật</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4 gap-8">
             <div className="rounded-2xl p-6 bg-card border shadow">
               <img src="/f.jpg" alt="Đặt lịch" className="w-full h-40 md:h-44 object-cover rounded-xl mb-5" width="640" height="224" loading="lazy" />
