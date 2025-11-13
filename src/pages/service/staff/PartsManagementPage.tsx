@@ -43,20 +43,6 @@ const extractCategory = (partNumber: string): string => {
   return 'Khác';
 };
 
-// Helper function to extract compatible model from description
-const extractCompatibleModel = (description?: string): string => {
-  if (!description) return '';
-  const desc = description.toUpperCase();
-  if (desc.includes('VF 3') || desc.includes('VF3')) return 'VF 3';
-  if (desc.includes('VF 5') || desc.includes('VF5')) return 'VF 5';
-  if (desc.includes('VF 6') || desc.includes('VF6')) return 'VF 6';
-  if (desc.includes('VF 7') || desc.includes('VF7')) return 'VF 7';
-  if (desc.includes('VF 8') || desc.includes('VF8')) return 'VF 8';
-  if (desc.includes('VF 9') || desc.includes('VF9')) return 'VF 9';
-  if (desc.includes('VF E34') || desc.includes('VFE34')) return 'VF e34';
-  return '';
-};
-
 export default function PartsManagementPage() {
   const [parts, setParts] = useState<Part[]>([]);
   const [isPartDialogOpen, setIsPartDialogOpen] = useState(false);
@@ -92,20 +78,20 @@ export default function PartsManagementPage() {
       try {
         const apiParts = await apiClient.getParts();
         if (!mounted) return;
-        
+
         // Map API response to UI interface
         const mappedParts: Part[] = apiParts.map((apiPart) => {
           const currentStock = apiPart.quantity;
           const usedQuantity = apiPart.used; // Use 'used' from API
           const initialQuantity = apiPart.all; // Use 'all' from API (total quantity)
           const minStock = Math.max(1, Math.floor(initialQuantity * 0.2)); // 20% of initial
-          
+
           // Map status from API (ACTIVE/INACTIVE) to active/inactive
           const status: 'active' | 'inactive' = apiPart.status === 'ACTIVE' ? 'active' : 'inactive';
-          
+
           // Use category from API (already available)
           const category = apiPart.category || extractCategory(apiPart.partNumber);
-          
+
           // Extract compatible model from vehicleModelsEnum
           let compatibleModel = '';
           if (apiPart.vehicleModelsEnum && apiPart.vehicleModelsEnum.enumValue.length > 0) {
@@ -113,11 +99,8 @@ export default function PartsManagementPage() {
             compatibleModel = apiPart.vehicleModelsEnum.enumValue
               .map(model => model.replace('VinFast ', '')) // Remove "VinFast " prefix
               .join(', ');
-          } else {
-            // Fallback to extraction from description if enum not available
-            compatibleModel = extractCompatibleModel(apiPart.description);
           }
-          
+
           return {
             id: String(apiPart.id),
             name: apiPart.name,
@@ -135,10 +118,9 @@ export default function PartsManagementPage() {
             lastRestocked: apiPart.createdAt ? apiPart.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
             status: status, // Trạng thái sử dụng (active/inactive)
             location: 'Kho chính',
-            description: apiPart.description,
           };
         });
-        
+
         setParts(mappedParts);
       } catch (error) {
         console.error('Error loading parts:', error);
@@ -149,7 +131,7 @@ export default function PartsManagementPage() {
         });
       }
     })();
-    
+
     return () => {
       mounted = false;
     };
@@ -191,9 +173,7 @@ export default function PartsManagementPage() {
           ...part,
           usedQuantity: newUsedQuantity,
           currentStock: newCurrentStock,
-          status: newCurrentStock > 0 ?
-            (newCurrentStock <= part.minStock ? 'low_stock' : 'in_stock') :
-            'out_of_stock'
+          // Keep the original status (active/inactive), don't change it based on stock
         };
       }
       return part;
@@ -238,9 +218,8 @@ export default function PartsManagementPage() {
                 unitPrice: Number(data.unitPrice),
                 supplier: data.supplier,
                 lastRestocked: new Date().toISOString().split('T')[0],
-                status: currentStock > 0 ? (currentStock <= Math.max(1, Math.floor(initialQuantity * 0.2)) ? 'low_stock' : 'in_stock') : 'out_of_stock',
+                status: editingPart?.status || 'active', // Keep existing status or default to 'active'
                 location: 'Kho chính',
-                description: editingPart?.description
               };
               setParts(prev => editingPart ? prev.map(p => p.id === editingPart.id ? next : p) : [...prev, next]);
               setIsPartDialogOpen(false);

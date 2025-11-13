@@ -8,6 +8,8 @@ import DefaultLayout from "../layouts/DefaultLayout";
 const Index = lazy(() => import("../pages/Index"));
 const Login = lazy(() => import("../pages/Login"));
 const Verify = lazy(() => import("../pages/Verify"));
+const ForgotPassword = lazy(() => import("../pages/ForgotPasswordPage"));
+const ResetPassword = lazy(() => import("../pages/ResetPasswordPage"));
 const NotFound = lazy(() => import("../pages/NotFound"));
 const Unauthorized = lazy(() => import("../pages/Unauthorized"));
 const About = lazy(() => import("../pages/marketing/About"));
@@ -60,6 +62,8 @@ export default function AppRoutes() {
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
         <Route path="/verify" element={<Verify />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/about" element={<About />} />
         <Route path="/services" element={<Services />} />

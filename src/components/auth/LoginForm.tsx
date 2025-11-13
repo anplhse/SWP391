@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff } from 'lucide-react';
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 interface LoginFormProps {
   onLogin: (userName: string, password: string) => void;
@@ -37,7 +38,15 @@ export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
 
       {/* Password */}
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-foreground">Mật khẩu</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password" className="text-foreground">Mật khẩu</Label>
+          <Link
+            to="/forgot-password"
+            className="text-sm text-primary hover:underline"
+          >
+            Quên mật khẩu?
+          </Link>
+        </div>
         <div className="relative">
           <Input
             id="password"
