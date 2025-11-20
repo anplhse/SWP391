@@ -41,6 +41,23 @@ export default function Blog() {
             </div>
             <span className="font-semibold text-gray-800">VinFast Service Workshop</span>
           </div>
+          
+          {/* Navigation Menu */}
+          <nav className="hidden md:flex items-center gap-8">
+            <button onClick={() => navigate('/about')} className="text-gray-700 hover:text-primary font-medium transition-colors">
+              Giới thiệu
+            </button>
+            <button onClick={() => navigate('/services')} className="text-gray-700 hover:text-primary font-medium transition-colors">
+              Dịch vụ
+            </button>
+            <button onClick={() => navigate('/pricing')} className="text-gray-700 hover:text-primary font-medium transition-colors">
+              Bảng giá
+            </button>
+            <button onClick={() => navigate('/contact')} className="text-gray-700 hover:text-primary font-medium transition-colors">
+              Liên hệ
+            </button>
+          </nav>
+          
           <div className="flex items-center gap-3 relative z-30">
             <Button 
               onClick={() => navigate('/')}
