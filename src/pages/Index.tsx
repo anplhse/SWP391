@@ -175,8 +175,8 @@ const Index = () => {
               </div>
               <p className="text-sm text-muted-foreground">Nền tảng quản lý bảo dưỡng xe VinFast</p>
             </div>
-            <div>
-              <h4 className="font-sans font-semibold mb-3">Thông tin</h4>
+            <div className="md:pl-20">
+              <h4 className="font-sans font-semibold mb-3 pt-1">Thông tin</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><a href="/about" className="hover:text-foreground">Giới thiệu</a></li>
                 <li><a href="/pricing" className="hover:text-foreground">Bảng giá</a></li>
@@ -184,7 +184,7 @@ const Index = () => {
               </ul>
             </div>
             <div>
-              <h4 className="font-sans font-semibold mb-3">Chức năng</h4>
+              <h4 className="font-sans font-semibold mb-3 pt-1">Chức năng</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><a href="/services" className="hover:text-foreground">Đặt lịch</a></li>
                 <li><a href="/services" className="hover:text-foreground">Tiếp nhận xe</a></li>
@@ -193,7 +193,7 @@ const Index = () => {
               </ul>
             </div>
             <div>
-              <h4 className="font-sans font-semibold mb-3">Liên hệ</h4>
+              <h4 className="font-sans font-semibold mb-3 pt-1">Liên hệ</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><a href="/contact" className="hover:text-foreground">Form liên hệ</a></li>
               </ul>
