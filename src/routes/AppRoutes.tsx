@@ -25,6 +25,7 @@ import BookingPage from '@/pages/customer/BookingPage';
 import BookingStatusPage from '@/pages/customer/BookingStatusPage';
 import BookingsAndHistoryPage from '@/pages/customer/BookingsAndHistoryPage';
 import CustomerDashboard from '@/pages/customer/CustomerDashboard';
+import PaymentHistoryPage from '@/pages/customer/PaymentHistoryPage';
 import PaymentResultPage from '@/pages/customer/PaymentResultPage';
 import CustomerVehicleManagementPage from '@/pages/customer/VehicleManagementPage';
 import VehicleProfilePage from '@/pages/customer/VehicleProfilePage';
@@ -80,6 +81,7 @@ export default function AppRoutes() {
             <Route path="customer/booking/confirmation" element={<ProtectedRoute requiredRole="Khách hàng"><BookingConfirmationPage /></ProtectedRoute>} />
             <Route path="customer/bookings" element={<ProtectedRoute requiredRole="Khách hàng"><BookingsAndHistoryPage /></ProtectedRoute>} />
             <Route path="customer/booking-status" element={<ProtectedRoute requiredRole="Khách hàng"><BookingStatusPage /></ProtectedRoute>} />
+            <Route path="customer/payment-history" element={<ProtectedRoute requiredRole="Khách hàng"><PaymentHistoryPage /></ProtectedRoute>} />
             <Route path="customer/vehicles" element={<ProtectedRoute requiredRole="Khách hàng"><CustomerVehicleManagementPage /></ProtectedRoute>} />
             <Route path="customer/vehicle/:vehicleId" element={<ProtectedRoute requiredRole="Khách hàng"><VehicleProfilePage /></ProtectedRoute>} />
 

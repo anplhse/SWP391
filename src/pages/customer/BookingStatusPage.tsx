@@ -1,6 +1,7 @@
 import { DataTable } from '@/components/DataTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/lib/api';
 import { bookingApi } from '@/lib/bookingUtils';
@@ -13,6 +14,7 @@ import {
   CreditCard,
   Edit,
   History,
+  Info,
   Trash2,
   Wrench,
   X
@@ -444,7 +446,7 @@ export default function BookingStatusPage() {
   const StatusIcon = statusInfo.icon;
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center mb-4">
@@ -464,129 +466,152 @@ export default function BookingStatusPage() {
         </p>
       </div>
 
-      {/* Booking Information Table */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Thông tin lịch hẹn</h2>
-        <DataTable columns={bookingInfoColumns} data={bookingInfoData} />
-      </div>
+      {/* Tabs */}
+      <Tabs defaultValue="info" className="w-full">
+        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+          <TabsTrigger value="info" className="flex items-center gap-2">
+            <Info className="w-4 h-4" />
+            Thông tin
+          </TabsTrigger>
+          <TabsTrigger value="payment-history" className="flex items-center gap-2">
+            <History className="w-4 h-4" />
+            Lịch sử thanh toán
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Services Table */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Dịch vụ đã chọn</h2>
-        <DataTable
-          columns={servicesColumns}
-          data={(booking.catalogDetails || []).map(s => ({
-            id: s.id,
-            serviceName: s.serviceName,
-            description: s.description
-          }))}
-        />
-      </div>
+        {/* Tab: Thông tin */}
+        <TabsContent value="info" className="space-y-6 mt-6">
+          {/* Booking Information Table */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Thông tin lịch hẹn</h2>
+            <DataTable columns={bookingInfoColumns} data={bookingInfoData} />
+          </div>
 
-      {/* Invoice Information */}
-      {booking.invoice && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Thông tin hóa đơn</h2>
-          <DataTable
-            columns={bookingInfoColumns}
-            data={[
-              { label: 'Số hóa đơn', value: <span className="font-mono font-medium">{booking.invoice.invoiceNumber}</span> },
-              {
-                label: 'Trạng thái',
-                value: (
-                  <Badge
-                    variant={booking.invoice.status === 'PAID' ? 'default' : 'secondary'}
-                    className={booking.invoice.status === 'PAID' ? 'bg-green-600 hover:bg-green-700' : ''}
-                  >
-                    {booking.invoice.status === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}
-                  </Badge>
-                ),
-              },
-              { label: 'Ngày tạo', value: new Date(booking.invoice.issueDate).toLocaleString('vi-VN') },
-              { label: 'Hạn thanh toán', value: new Date(booking.invoice.dueDate).toLocaleDateString('vi-VN') },
-              {
-                label: 'Thời gian thanh toán',
-                value: booking.invoice.paidAt ? new Date(booking.invoice.paidAt).toLocaleString('vi-VN') : '—',
-              },
-              {
-                label: 'Tổng tiền',
-                value: <span className="font-semibold text-green-600">{formatPrice(booking.invoice.totalAmount)}</span>,
-              },
-            ]}
-          />
-        </div>
-      )}
-
-      {/* Invoice Lines */}
-      {booking.invoice && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Chi tiết hóa đơn</h2>
-          <DataTable
-            columns={invoiceLinesColumns}
-            data={booking.invoice.invoiceLines}
-          />
-        </div>
-      )}
-
-      {/* Payment History */}
-      {paymentHistory.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Lịch sử thanh toán</h2>
-          {isLoadingPaymentHistory ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Đang tải lịch sử thanh toán...
-            </div>
-          ) : (
+          {/* Services Table */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Dịch vụ đã chọn</h2>
             <DataTable
-              columns={paymentHistoryColumns}
-              data={paymentHistory}
+              columns={servicesColumns}
+              data={(booking.catalogDetails || []).map(s => ({
+                id: s.id,
+                serviceName: s.serviceName,
+                description: s.description
+              }))}
             />
-          )}
-        </div>
-      )}
+          </div>
 
-      {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        {booking.bookingStatus === 'CONFIRMED' && booking.invoice && (
-          <Button
-            onClick={handlePayment}
-            disabled={isProcessingPayment}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <CreditCard className="w-4 h-4 mr-2" />
-            {isProcessingPayment ? 'Đang xử lý...' : 'Thanh toán'}
-          </Button>
-        )}
-        {['MAINTENANCE_COMPLETE', 'COMPLETED'].includes(booking.bookingStatus) && booking.invoice && booking.invoice.status !== 'PAID' && (
-          <Button
-            onClick={handlePayment}
-            disabled={isProcessingPayment}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <CreditCard className="w-4 h-4 mr-2" />
-            {isProcessingPayment ? 'Đang xử lý...' : 'Thanh toán ngay'}
-          </Button>
-        )}
-        {!['CANCELLED', 'REJECTED', 'COMPLETED', 'MAINTENANCE_COMPLETE'].includes(booking.bookingStatus) && (
-          <>
-            <Button variant="outline" onClick={handleEditBooking}>
-              <Edit className="w-4 h-4 mr-2" />
-              Chỉnh sửa lịch hẹn
+          {/* Invoice Information */}
+          {booking.invoice && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">Thông tin hóa đơn</h2>
+              <DataTable
+                columns={bookingInfoColumns}
+                data={[
+                  { label: 'Số hóa đơn', value: <span className="font-mono font-medium">{booking.invoice.invoiceNumber}</span> },
+                  {
+                    label: 'Trạng thái',
+                    value: (
+                      <Badge
+                        variant={booking.invoice.status === 'PAID' ? 'default' : 'secondary'}
+                        className={booking.invoice.status === 'PAID' ? 'bg-green-600 hover:bg-green-700' : ''}
+                      >
+                        {booking.invoice.status === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                      </Badge>
+                    ),
+                  },
+                  { label: 'Ngày tạo', value: new Date(booking.invoice.issueDate).toLocaleString('vi-VN') },
+                  { label: 'Hạn thanh toán', value: new Date(booking.invoice.dueDate).toLocaleDateString('vi-VN') },
+                  {
+                    label: 'Thời gian thanh toán',
+                    value: booking.invoice.paidAt ? new Date(booking.invoice.paidAt).toLocaleString('vi-VN') : '—',
+                  },
+                  {
+                    label: 'Tổng tiền',
+                    value: <span className="font-semibold text-green-600">{formatPrice(booking.invoice.totalAmount)}</span>,
+                  },
+                ]}
+              />
+            </div>
+          )}
+
+          {/* Invoice Lines */}
+          {booking.invoice && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">Chi tiết hóa đơn</h2>
+              <DataTable
+                columns={invoiceLinesColumns}
+                data={booking.invoice.invoiceLines}
+              />
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+            {booking.bookingStatus === 'CONFIRMED' && booking.invoice && (
+              <Button
+                onClick={handlePayment}
+                disabled={isProcessingPayment}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CreditCard className="w-4 h-4 mr-2" />
+                {isProcessingPayment ? 'Đang xử lý...' : 'Thanh toán'}
+              </Button>
+            )}
+            {['MAINTENANCE_COMPLETE', 'COMPLETED'].includes(booking.bookingStatus) && booking.invoice && booking.invoice.status !== 'PAID' && (
+              <Button
+                onClick={handlePayment}
+                disabled={isProcessingPayment}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CreditCard className="w-4 h-4 mr-2" />
+                {isProcessingPayment ? 'Đang xử lý...' : 'Thanh toán ngay'}
+              </Button>
+            )}
+            {!['CANCELLED', 'REJECTED', 'COMPLETED', 'MAINTENANCE_COMPLETE'].includes(booking.bookingStatus) && (
+              <>
+                <Button variant="outline" onClick={handleEditBooking}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Chỉnh sửa lịch hẹn
+                </Button>
+                <Button variant="destructive" onClick={handleCancelBooking}>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Hủy lịch hẹn
+                </Button>
+              </>
+            )}
+            <Button variant="outline" onClick={() => navigate('/customer/bookings')}>
+              <History className="w-4 h-4 mr-2" />
+              Xem lịch sử
             </Button>
-            <Button variant="destructive" onClick={handleCancelBooking}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              Hủy lịch hẹn
+            <Button variant="outline" onClick={() => navigate('/customer')}>
+              Về trang chủ
             </Button>
-          </>
-        )}
-        <Button variant="outline" onClick={() => navigate('/customer/bookings')}>
-          <History className="w-4 h-4 mr-2" />
-          Xem lịch sử
-        </Button>
-        <Button variant="outline" onClick={() => navigate('/customer')}>
-          Về trang chủ
-        </Button>
-      </div>
+          </div>
+        </TabsContent>
+
+        {/* Tab: Lịch sử thanh toán */}
+        <TabsContent value="payment-history" className="space-y-6 mt-6">
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Lịch sử thanh toán</h2>
+            {isLoadingPaymentHistory ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Đang tải lịch sử thanh toán...</p>
+              </div>
+            ) : paymentHistory.length > 0 ? (
+              <DataTable
+                columns={paymentHistoryColumns}
+                data={paymentHistory}
+              />
+            ) : (
+              <div className="text-center py-12 border rounded-lg">
+                <History className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">Chưa có lịch sử thanh toán</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

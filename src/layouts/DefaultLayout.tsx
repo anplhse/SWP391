@@ -1,6 +1,5 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/hooks/useAuth';
-import { authService } from '@/lib/auth';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 export default function DefaultLayout() {

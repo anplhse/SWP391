@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Bell, Calendar, Car, ClipboardList, History, LayoutDashboard, LogOut, Package, Settings, User, Users, Wrench } from 'lucide-react';
+import { Bell, Calendar, Car, ClipboardList, CreditCard, History, LayoutDashboard, LogOut, Package, Settings, User, Users, Wrench } from 'lucide-react';
 import { ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 
@@ -131,6 +131,7 @@ export function DashboardLayout({ children, title, user }: DashboardLayoutProps)
           { to: '/customer/booking', icon: Calendar, label: 'Đặt lịch' },
           { to: '/customer/bookings', icon: History, label: 'Quản lý lịch hẹn' },
           { to: '/customer/vehicles', icon: Car, label: 'Xe của tôi' },
+          { to: '/customer/payment-history', icon: CreditCard, label: 'Lịch sử thanh toán' },
         ];
     }
   })();
