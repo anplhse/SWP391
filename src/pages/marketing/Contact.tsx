@@ -148,7 +148,7 @@ export default function Contact() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Left Side - Contact Methods */}
           <div className="space-y-4">
             <Card className="bg-card backdrop-blur-sm shadow-2xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 hover:scale-105 border-2 border-card hover:border-primary/30">
