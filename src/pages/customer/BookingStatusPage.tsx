@@ -5,19 +5,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/lib/api';
+import { getBookingStatusBadge, getBookingStatusInfo } from '@/lib/bookingStatusUtils';
 import { bookingApi } from '@/lib/bookingUtils';
 import { showApiErrorToast } from '@/lib/responseHandler';
 import { ColumnDef } from '@tanstack/react-table';
 import {
-  AlertCircle,
-  CheckCircle2,
-  Clock,
   CreditCard,
   Edit,
   History,
   Star,
   Trash2,
-  Wrench,
   X
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -99,6 +96,7 @@ export default function BookingStatusPage() {
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [feedbackComment, setFeedbackComment] = useState('');
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [isEditingFeedback, setIsEditingFeedback] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -166,88 +164,11 @@ export default function BookingStatusPage() {
   }, [isFeedbackDialogOpen]);
 
   const getStatusInfo = useCallback((status: string) => {
-    const normalized = (status || '').toUpperCase();
-    switch (normalized) {
-      case 'PENDING':
-        return {
-          label: 'Chờ xác nhận',
-          color: 'secondary' as const,
-          icon: Clock,
-          description: 'Đang chờ trung tâm xác nhận lịch hẹn'
-        };
-      case 'CONFIRMED':
-        return {
-          label: 'Đã xác nhận',
-          color: 'default' as const,
-          icon: CheckCircle2,
-          description: 'Lịch hẹn đã được xác nhận, sẵn sàng thực hiện'
-        };
-      case 'PAID':
-        return {
-          label: 'Đã thanh toán',
-          color: 'default' as const,
-          icon: CreditCard,
-          description: 'Đã thanh toán trước, sẵn sàng thực hiện dịch vụ'
-        };
-      case 'IN_PROGRESS':
-        return {
-          label: 'Đang thực hiện',
-          color: 'default' as const,
-          icon: Wrench,
-          description: 'Dịch vụ đang được thực hiện'
-        };
-      case 'MAINTENANCE_COMPLETE':
-      case 'COMPLETED':
-        return {
-          label: 'Hoàn thành',
-          color: 'default' as const,
-          icon: CheckCircle2,
-          description: 'Dịch vụ đã hoàn thành'
-        };
-      case 'CANCELLED':
-        return {
-          label: 'Đã hủy',
-          color: 'destructive' as const,
-          icon: AlertCircle,
-          description: 'Lịch hẹn đã bị hủy'
-        };
-      case 'REJECTED':
-        return {
-          label: 'Từ chối',
-          color: 'destructive' as const,
-          icon: AlertCircle,
-          description: 'Lịch hẹn đã bị từ chối bởi trung tâm'
-        };
-      default:
-        return {
-          label: 'Không xác định',
-          color: 'secondary' as const,
-          icon: AlertCircle,
-          description: 'Trạng thái không xác định'
-        };
-    }
+    return getBookingStatusInfo(status);
   }, []);
 
   const getStatusBadge = useCallback((status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return <Badge variant="secondary">Chờ xác nhận</Badge>;
-      case 'CONFIRMED':
-        return <Badge variant="default">Đã xác nhận</Badge>;
-      case 'PAID':
-        return <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">Đã thanh toán</Badge>;
-      case 'IN_PROGRESS':
-        return <Badge variant="default" className="bg-orange-600 hover:bg-orange-700">Đang thực hiện</Badge>;
-      case 'MAINTENANCE_COMPLETE':
-      case 'COMPLETED':
-        return <Badge variant="default" className="bg-green-600 hover:bg-green-700">Hoàn thành</Badge>;
-      case 'CANCELLED':
-        return <Badge variant="destructive">Đã hủy</Badge>;
-      case 'REJECTED':
-        return <Badge variant="destructive">Từ chối</Badge>;
-      default:
-        return <Badge variant="outline">Không xác định</Badge>;
-    }
+    return getBookingStatusBadge(status);
   }, []);
 
   const formatPrice = useCallback((price: number) => {
@@ -269,12 +190,21 @@ export default function BookingStatusPage() {
     });
   }, [booking, navigate]);
 
-  const handleCancelBooking = useCallback(() => {
-    toast({
-      title: 'Thông báo',
-      description: 'Tính năng hủy lịch sẽ được bổ sung sau.',
-    });
-  }, [toast]);
+  const handleCancelBooking = useCallback(async () => {
+    if (!booking) return;
+
+    try {
+      const result = await bookingApi.cancelBooking(booking.id);
+      setBooking(result);
+      toast({
+        title: 'Hủy lịch hẹn thành công',
+        description: 'Lịch hẹn đã được hủy thành công.',
+      });
+    } catch (error) {
+      console.error('Failed to cancel booking:', error);
+      showApiErrorToast(error, toast, 'Không thể hủy lịch hẹn');
+    }
+  }, [booking, toast]);
 
   const handlePayment = useCallback(async () => {
     if (!booking || !booking.invoice?.id) {
@@ -302,11 +232,21 @@ export default function BookingStatusPage() {
   }, [booking, toast]);
 
   const handleOpenFeedbackDialog = useCallback(() => {
+    setIsEditingFeedback(false);
     setIsFeedbackDialogOpen(true);
     setSelectedRating(0);
     setSelectedTags([]);
     setFeedbackComment('');
   }, []);
+
+  const handleEditFeedback = useCallback(() => {
+    if (!feedback) return;
+    setIsEditingFeedback(true);
+    setIsFeedbackDialogOpen(true);
+    setSelectedRating(feedback.rating);
+    setSelectedTags(feedback.tags.map(tag => tag.id));
+    setFeedbackComment(feedback.comment || '');
+  }, [feedback]);
 
   const handleToggleTag = useCallback((tagId: number) => {
     setSelectedTags(prev =>
@@ -328,12 +268,23 @@ export default function BookingStatusPage() {
 
     setIsSubmittingFeedback(true);
     try {
-      const newFeedback = await apiClient.createFeedback({
-        rating: selectedRating,
-        comment: feedbackComment,
-        tagIds: selectedTags.length > 0 ? selectedTags : undefined,
-        bookingId: booking.id,
-      });
+      if (isEditingFeedback && feedback) {
+        // Update existing feedback
+        await apiClient.updateFeedback(feedback.id, {
+          rating: selectedRating,
+          comment: feedbackComment,
+          bookingId: booking.id,
+          tagIds: selectedTags.length > 0 ? selectedTags : undefined,
+        });
+      } else {
+        // Create new feedback
+        await apiClient.createFeedback({
+          rating: selectedRating,
+          comment: feedbackComment,
+          tagIds: selectedTags.length > 0 ? selectedTags : undefined,
+          bookingId: booking.id,
+        });
+      }
 
       // Reload feedback after successful submission
       const feedbackData = await apiClient.getFeedbackByBookingId(booking.id);
@@ -341,20 +292,21 @@ export default function BookingStatusPage() {
 
       toast({
         title: 'Thành công',
-        description: 'Cảm ơn bạn đã đánh giá dịch vụ!',
+        description: isEditingFeedback ? 'Đã cập nhật đánh giá!' : 'Cảm ơn bạn đã đánh giá dịch vụ!',
       });
 
       setIsFeedbackDialogOpen(false);
+      setIsEditingFeedback(false);
       setSelectedRating(0);
       setSelectedTags([]);
       setFeedbackComment('');
     } catch (error) {
       console.error('Failed to submit feedback:', error);
-      showApiErrorToast(error, toast, 'Không thể gửi đánh giá. Vui lòng thử lại.');
+      showApiErrorToast(error, toast, isEditingFeedback ? 'Không thể cập nhật đánh giá. Vui lòng thử lại.' : 'Không thể gửi đánh giá. Vui lòng thử lại.');
     } finally {
       setIsSubmittingFeedback(false);
     }
-  }, [booking, selectedRating, feedbackComment, selectedTags, toast]);
+  }, [booking, selectedRating, feedbackComment, selectedTags, isEditingFeedback, feedback, toast]);
 
   const filteredTags = useMemo(() => {
     if (!selectedRating) return [];
@@ -508,7 +460,7 @@ export default function BookingStatusPage() {
         {/* Booking Information Table */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Thông tin lịch hẹn</h2>
-          <DataTable columns={bookingInfoColumns} data={bookingInfoData} />
+          <DataTable columns={bookingInfoColumns} data={bookingInfoData} showPagination={false} />
         </div>
 
         {/* Services Table */}
@@ -521,6 +473,7 @@ export default function BookingStatusPage() {
               serviceName: s.serviceName,
               description: s.description
             }))}
+            showPagination={false}
           />
         </div>
 
@@ -554,6 +507,7 @@ export default function BookingStatusPage() {
                   value: <span className="font-semibold text-green-600">{formatPrice(booking.invoice.totalAmount)}</span>,
                 },
               ]}
+              showPagination={false}
             />
           </div>
         )}
@@ -565,12 +519,13 @@ export default function BookingStatusPage() {
             <DataTable
               columns={invoiceLinesColumns}
               data={booking.invoice.invoiceLines}
+              showPagination={false}
             />
           </div>
         )}
 
         {/* Feedback Section - chỉ hiển thị khi booking completed */}
-        {['MAINTENANCE_COMPLETE', 'COMPLETED'].includes(booking.bookingStatus) && (
+        {booking.bookingStatus === 'MAINTENANCE_COMPLETE' && (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Đánh giá dịch vụ</h2>
             {isLoadingFeedback ? (
@@ -579,21 +534,31 @@ export default function BookingStatusPage() {
               </div>
             ) : feedback ? (
               <div className="border rounded-lg p-6 space-y-4">
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((rating) => (
-                      <Star
-                        key={rating}
-                        className={`w-5 h-5 ${rating <= feedback.rating
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-300'
-                          }`}
-                      />
-                    ))}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <Star
+                          key={rating}
+                          className={`w-5 h-5 ${rating <= feedback.rating
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-gray-300'
+                            }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(feedback.createdAt).toLocaleString('vi-VN')}
+                    </span>
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    {new Date(feedback.createdAt).toLocaleString('vi-VN')}
-                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleEditFeedback}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Chỉnh sửa
+                  </Button>
                 </div>
                 {feedback.comment && (
                   <p className="text-sm">{feedback.comment}</p>
@@ -635,7 +600,7 @@ export default function BookingStatusPage() {
               {isProcessingPayment ? 'Đang xử lý...' : 'Thanh toán'}
             </Button>
           )}
-          {['MAINTENANCE_COMPLETE', 'COMPLETED'].includes(booking.bookingStatus) && booking.invoice && booking.invoice.status !== 'PAID' && (
+          {booking.bookingStatus === 'MAINTENANCE_COMPLETE' && booking.invoice && booking.invoice.status !== 'PAID' && (
             <Button
               onClick={handlePayment}
               disabled={isProcessingPayment}
@@ -645,7 +610,7 @@ export default function BookingStatusPage() {
               {isProcessingPayment ? 'Đang xử lý...' : 'Thanh toán ngay'}
             </Button>
           )}
-          {!['CANCELLED', 'REJECTED', 'COMPLETED', 'MAINTENANCE_COMPLETE'].includes(booking.bookingStatus) && (
+          {booking.bookingStatus === 'PENDING' && (
             <>
               <Button variant="outline" onClick={handleEditBooking}>
                 <Edit className="w-4 h-4 mr-2" />
@@ -671,9 +636,9 @@ export default function BookingStatusPage() {
       <Dialog open={isFeedbackDialogOpen} onOpenChange={setIsFeedbackDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Đánh giá dịch vụ</DialogTitle>
+            <DialogTitle>{isEditingFeedback ? 'Chỉnh sửa đánh giá' : 'Đánh giá dịch vụ'}</DialogTitle>
             <DialogDescription>
-              Chia sẻ trải nghiệm của bạn về dịch vụ bảo dưỡng
+              {isEditingFeedback ? 'Cập nhật đánh giá của bạn về dịch vụ bảo dưỡng' : 'Chia sẻ trải nghiệm của bạn về dịch vụ bảo dưỡng'}
             </DialogDescription>
           </DialogHeader>
 

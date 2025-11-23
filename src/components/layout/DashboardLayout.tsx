@@ -80,7 +80,7 @@ export function DashboardLayout({ children, title, user }: DashboardLayoutProps)
   // Helper: NavLink integrated with SidebarMenuButton to set active state
   const isActivePath = (path: string) => {
     // Only exact match for dashboard paths to prevent multiple active states
-    if (path === '/customer' || path === '/service/staff' || path === '/service/technician' || path === '/service/admin') {
+    if (path === '/customer' || path === '/service/admin') {
       return location.pathname === path;
     }
     // For other paths, allow startsWith for sub-pages
@@ -104,7 +104,6 @@ export function DashboardLayout({ children, title, user }: DashboardLayoutProps)
     switch (currentUser.role) {
       case 'Nhân viên':
         return [
-          { to: '/service/staff', icon: LayoutDashboard, label: 'Dashboard' },
           { to: '/service/customers', icon: Users, label: 'Quản lý tài khoản' },
           { to: '/service/vehicles', icon: Car, label: 'Quản lý xe' },
           { to: '/service/appointments', icon: Calendar, label: 'Quản lý lịch hẹn' },
@@ -112,12 +111,12 @@ export function DashboardLayout({ children, title, user }: DashboardLayoutProps)
           { to: '/service/maintenance', icon: Settings, label: 'Quy trình bảo dưỡng' },
           { to: '/service/parts', icon: Package, label: 'Quản lý phụ tùng' },
           { to: '/service/vehicle-models', icon: Car, label: 'Quản lý mẫu xe' },
+          { to: '/service/feedbacks', icon: Star, label: 'Quản lý đánh giá' },
         ];
       case 'Kỹ thuật viên':
         return [
-          { to: '/service/technician', icon: LayoutDashboard, label: 'Dashboard' },
-          { to: '/service/assigned-tasks', icon: ClipboardList, label: 'Công việc được giao' },
           { to: '/service/maintenance-process', icon: Settings, label: 'Quy trình bảo dưỡng' },
+          { to: '/service/assigned-tasks', icon: ClipboardList, label: 'Công việc được giao' },
           { to: '/service/vehicle-status', icon: Car, label: 'Trạng thái xe' },
         ];
       case 'Quản trị viên':

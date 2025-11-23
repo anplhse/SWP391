@@ -45,8 +45,8 @@ export default function PaymentResultPage() {
             description: 'Không tìm thấy thông tin đơn hàng.',
             variant: 'destructive',
           });
-          return;
-        }
+        return;
+      }
 
         setOrderCode(txnRef);
 
@@ -201,15 +201,15 @@ export default function PaymentResultPage() {
           {paymentStatus === 'success' && (
             <Button onClick={handleViewBooking} size="lg">
               Xem chi tiết đơn hàng
-            </Button>
+                </Button>
           )}
           <Button
             variant={paymentStatus === 'success' ? 'outline' : 'default'}
             onClick={() => navigate('/customer')}
             size="lg"
           >
-            Về trang chủ
-          </Button>
+                  Về trang chủ
+                </Button>
           {paymentStatus === 'failed' && (
             <Button
               variant="outline"

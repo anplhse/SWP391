@@ -2,6 +2,7 @@ import { DataTable } from '@/components/DataTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { getBookingStatusBadge } from '@/lib/bookingStatusUtils';
 import { bookingApi } from '@/lib/bookingUtils';
 import { showApiErrorToast } from '@/lib/responseHandler';
 import { ColumnDef } from '@tanstack/react-table';
@@ -145,24 +146,7 @@ export default function BookingConfirmationPage() {
   }, []);
 
   const getStatusBadge = useCallback((status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return <Badge variant="secondary">Chờ xác nhận</Badge>;
-      case 'CONFIRMED':
-        return <Badge variant="default">Đã xác nhận</Badge>;
-      case 'PAID':
-        return <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">Đã thanh toán</Badge>;
-      case 'IN_PROGRESS':
-        return <Badge variant="destructive">Đang thực hiện</Badge>;
-      case 'MAINTENANCE_COMPLETE':
-        return <Badge variant="default" className="bg-green-600 hover:bg-green-700">Hoàn thành</Badge>;
-      case 'CANCELLED':
-        return <Badge variant="destructive">Đã hủy</Badge>;
-      case 'REJECTED':
-        return <Badge variant="destructive">Từ chối</Badge>;
-      default:
-        return <Badge variant="outline">Không xác định</Badge>;
-    }
+    return getBookingStatusBadge(status);
   }, []);
 
   // Old column definitions removed; using unified definitions below

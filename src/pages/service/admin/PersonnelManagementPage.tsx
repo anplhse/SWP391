@@ -290,8 +290,8 @@ export default function PersonnelManagementPage() {
       const matchesRole = (watchFilters.role || 'all') === 'all' || employee.role === watchFilters.role;
       const matchesStatus = (watchFilters.status || 'all') === 'all' || String(employee.status).toLowerCase() === watchFilters.status;
 
-      return matchesSearch && matchesRole && matchesStatus;
-    });
+    return matchesSearch && matchesRole && matchesStatus;
+  });
   }, [employees, debouncedSearchTerm, watchFilters.role, watchFilters.status]);
 
   const getStatusBadge = (status: string) => {
@@ -441,9 +441,9 @@ export default function PersonnelManagementPage() {
                 <FormItem className="flex-1">
                   <FormControl>
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                      <Input
-                        placeholder="Tìm kiếm nhân viên..."
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Tìm kiếm nhân viên..."
                         {...field}
                         className="pl-10 pr-10"
                       />
@@ -456,7 +456,7 @@ export default function PersonnelManagementPage() {
                           <X className="w-4 h-4" />
                         </button>
                       )}
-                    </div>
+          </div>
                   </FormControl>
                 </FormItem>
               )}
@@ -468,17 +468,17 @@ export default function PersonnelManagementPage() {
                 <FormItem>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Lọc theo vai trò" />
-                      </SelectTrigger>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Lọc theo vai trò" />
+            </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="all">Tất cả</SelectItem>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
                       <SelectItem value="Quản trị viên">Quản lý</SelectItem>
                       <SelectItem value="Nhân viên">Nhân viên</SelectItem>
                       <SelectItem value="Kỹ thuật viên">Kỹ thuật</SelectItem>
-                    </SelectContent>
-                  </Select>
+            </SelectContent>
+          </Select>
                 </FormItem>
               )}
             />
@@ -489,17 +489,17 @@ export default function PersonnelManagementPage() {
                 <FormItem>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Lọc theo trạng thái" />
-                      </SelectTrigger>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Lọc theo trạng thái" />
+            </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="all">Tất cả</SelectItem>
-                      <SelectItem value="active">Hoạt động</SelectItem>
-                      <SelectItem value="inactive">Không hoạt động</SelectItem>
-                      <SelectItem value="on_leave">Nghỉ phép</SelectItem>
-                    </SelectContent>
-                  </Select>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="active">Hoạt động</SelectItem>
+              <SelectItem value="inactive">Không hoạt động</SelectItem>
+              <SelectItem value="on_leave">Nghỉ phép</SelectItem>
+            </SelectContent>
+          </Select>
                 </FormItem>
               )}
             />

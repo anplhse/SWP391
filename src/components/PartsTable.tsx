@@ -2,12 +2,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { useDebounce } from '@/hooks/useDebounce';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Edit, Plus, Search, Trash2, X } from 'lucide-react';
+import { Edit, Minus, Plus, PlusCircle, Search, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -17,19 +17,13 @@ interface Part {
   name: string;
   partNumber: string;
   category: string;
-  brand: string;
-  compatibleModel: string;
-  initialQuantity: number;
-  usedQuantity: number;
-  currentStock: number;
-  minStock: number;
-  maxStock: number;
-  unitPrice: number;
-  supplier: string;
-  lastRestocked: string;
-  status: 'active' | 'inactive'; // Trạng thái sử dụng (đang sử dụng/ngưng)
-  location: string;
-  description?: string;
+  manufacturer: string; // Nhà cung cấp (từ API manufacturer)
+  compatibleModel: string; // Model xe tương thích (extract từ vehicleModelsEnum)
+  initialQuantity: number; // Số lượng ban đầu (từ API all)
+  usedQuantity: number; // Số lượng đã sử dụng (từ API used)
+  currentStock: number; // Số lượng hiện tại (từ API quantity)
+  unitPrice: number; // Giá đơn vị (từ API currentUnitPrice)
+  status: 'active' | 'inactive'; // Trạng thái (từ API status)
 }
 
 interface PartsTableProps {
@@ -37,6 +31,8 @@ interface PartsTableProps {
   onEdit: (part: Part) => void;
   onDelete: (partId: string) => void;
   onAdd: () => void;
+  onIncreaseStock?: (partId: string, amount: number) => void;
+  onDecreaseStock?: (partId: string, amount: number) => void;
   showActions?: boolean;
 }
 
@@ -53,6 +49,8 @@ export function PartsTable({
   onEdit,
   onDelete,
   onAdd,
+  onIncreaseStock,
+  onDecreaseStock,
   showActions = true
 }: PartsTableProps) {
   const filtersForm = useForm<FiltersForm>({
@@ -69,7 +67,7 @@ export function PartsTable({
       const matchesSearch = !term ||
         part.name.toLowerCase().includes(term) ||
         part.partNumber.toLowerCase().includes(term) ||
-        part.brand.toLowerCase().includes(term);
+        part.manufacturer.toLowerCase().includes(term);
 
       const matchesCategory = watchFilters.category === 'all' || part.category === watchFilters.category;
       const matchesStatus = watchFilters.status === 'all' || part.status === watchFilters.status;
@@ -92,35 +90,6 @@ export function PartsTable({
     setCurrentPage(1);
   }, [debouncedSearch, watchFilters.category, watchFilters.status]);
 
-  const getPageNumbers = () => {
-    const pages: (number | 'ellipsis')[] = [];
-    const maxVisible = 5;
-
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      pages.push(1);
-      if (currentPage > 3) {
-        pages.push('ellipsis');
-      }
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
-      for (let i = start; i <= end; i++) {
-        if (i !== 1 && i !== totalPages) {
-          pages.push(i);
-        }
-      }
-      if (currentPage < totalPages - 2) {
-        pages.push('ellipsis');
-      }
-      if (totalPages > 1) {
-        pages.push(totalPages);
-      }
-    }
-    return pages;
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -244,7 +213,7 @@ export function PartsTable({
                   <TableCell>{part.name}</TableCell>
                   <TableCell>{part.partNumber}</TableCell>
                   <TableCell>{part.category}</TableCell>
-                  <TableCell>{part.brand}</TableCell>
+                  <TableCell>{part.manufacturer}</TableCell>
                   <TableCell>
                     {part.compatibleModel ? (
                       <Badge variant="secondary" className="text-xs">
@@ -255,11 +224,36 @@ export function PartsTable({
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm">
-                      <div className="font-medium text-green-600">{part.currentStock}</div>
-                      <div className="text-xs text-muted-foreground">
-                        Đã dùng: {part.usedQuantity} / Tổng: {part.initialQuantity}
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm">
+                        <div className="font-medium text-green-600">{part.currentStock}</div>
+                        <div className="text-xs text-muted-foreground">
+                          Đã dùng: {part.usedQuantity} / Tổng: {part.initialQuantity}
+                        </div>
                       </div>
+                      {showActions && onIncreaseStock && onDecreaseStock && (
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 w-6 p-0"
+                            onClick={() => onIncreaseStock(part.id, 1)}
+                            title="Tăng số lượng"
+                          >
+                            <PlusCircle className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 w-6 p-0"
+                            onClick={() => onDecreaseStock(part.id, 1)}
+                            disabled={part.currentStock <= 0}
+                            title="Giảm số lượng"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>{formatPrice(part.unitPrice)}</TableCell>
@@ -284,56 +278,11 @@ export function PartsTable({
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Hiển thị {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredParts.length)} trong tổng số {filteredParts.length} kết quả
-          </div>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage > 1) setCurrentPage(currentPage - 1);
-                  }}
-                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                />
-              </PaginationItem>
-              {getPageNumbers().map((page, index) => (
-                <PaginationItem key={index}>
-                  {page === 'ellipsis' ? (
-                    <PaginationEllipsis />
-                  ) : (
-                    <PaginationLink
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setCurrentPage(page as number);
-                      }}
-                      isActive={currentPage === page}
-                      className="cursor-pointer"
-                    >
-                      {page}
-                    </PaginationLink>
-                  )}
-                </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-                  }}
-                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+      <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

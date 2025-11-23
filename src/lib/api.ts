@@ -330,6 +330,26 @@ class ApiClient {
     });
   }
 
+  async deleteVehicle(vin: string): Promise<{
+    vin: string;
+    name: string;
+    plateNumber: string;
+    color: string;
+    distanceTraveledKm: number;
+    batteryDegradation: number;
+    purchasedAt: string;
+    createdAt: string;
+    entityStatus: string;
+    userId: number;
+    username: string;
+    modelId: number;
+    modelName: string;
+  }> {
+    return this.request(`/vehicles/${encodeURIComponent(vin)}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getVehicleModels(): Promise<Array<{
     id: number;
     brandName: string;
@@ -449,6 +469,28 @@ class ApiClient {
     });
   }
 
+  async getBookingStatusEnum(): Promise<{
+    name: string;
+    enumValue: string[];
+    description: string;
+    type: string;
+  }> {
+    return this.request('/bookings/status', {
+      method: 'GET',
+    });
+  }
+
+  async getPartCategories(): Promise<{
+    name: string;
+    enumValue: string[];
+    description: string;
+    type: string;
+  }> {
+    return this.request('/parts/categories', {
+      method: 'GET',
+    });
+  }
+
   async getProfile(): Promise<LoginResponse['user']> {
     return this.request<LoginResponse['user']>('/auth/profile');
   }
@@ -529,6 +571,7 @@ class ApiClient {
     reserved: number;
     used: number;
     all: number;
+    imageUrl: string | null;
     status: string;
     createdAt: string;
     catalogsEnum: {
@@ -547,6 +590,148 @@ class ApiClient {
   }>> {
     return this.request('/parts', {
       method: 'GET',
+    });
+  }
+
+  async createPart(payload: {
+    name: string;
+    partNumber: string;
+    manufacturer: string;
+    category: string;
+    currentUnitPrice: number;
+    quantity: number;
+    imageUrl?: string;
+  }): Promise<{
+    id: number;
+    name: string;
+    partNumber: string;
+    manufacturer: string;
+    category: string;
+    currentUnitPrice: number;
+    quantity: number;
+    reserved: number;
+    used: number;
+    all: number;
+    imageUrl: string | null;
+    status: string;
+    createdAt: string;
+    catalogsEnum: null;
+    vehicleModelsEnum: null;
+    catalogVehicleMapping: null;
+  }> {
+    return this.request('/parts', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async increasePartStock(partId: number, amount: number): Promise<{
+    id: number;
+    name: string;
+    partNumber: string;
+    manufacturer: string;
+    category: string;
+    currentUnitPrice: number;
+    quantity: number;
+    reserved: number;
+    used: number;
+    all: number;
+    imageUrl: string | null;
+    status: string;
+    createdAt: string;
+    catalogsEnum: {
+      name: string;
+      enumValue: string[];
+      description: string;
+      type: string;
+    } | null;
+    vehicleModelsEnum: {
+      name: string;
+      enumValue: string[];
+      description: string;
+      type: string;
+    } | null;
+    catalogVehicleMapping: Record<string, string[]> | null;
+  }> {
+    return this.request(`/parts/${partId}/stock/increase?amount=${amount}`, {
+      method: 'POST',
+    });
+  }
+
+  async decreasePartStock(partId: number, amount: number): Promise<{
+    id: number;
+    name: string;
+    partNumber: string;
+    manufacturer: string;
+    category: string;
+    currentUnitPrice: number;
+    quantity: number;
+    reserved: number;
+    used: number;
+    all: number;
+    imageUrl: string | null;
+    status: string;
+    createdAt: string;
+    catalogsEnum: {
+      name: string;
+      enumValue: string[];
+      description: string;
+      type: string;
+    } | null;
+    vehicleModelsEnum: {
+      name: string;
+      enumValue: string[];
+      description: string;
+      type: string;
+    } | null;
+    catalogVehicleMapping: Record<string, string[]> | null;
+  }> {
+    return this.request(`/parts/${partId}/stock/decrease?amount=${amount}`, {
+      method: 'POST',
+    });
+  }
+
+  async updatePart(partId: number, payload: {
+    name: string;
+    partNumber: string;
+    manufacturer: string;
+    category: string;
+    currentUnitPrice: number;
+    quantity: number;
+    reserved: number;
+    used: number;
+    imageUrl?: string;
+  }): Promise<{
+    id: number;
+    name: string;
+    partNumber: string;
+    manufacturer: string;
+    category: string;
+    currentUnitPrice: number;
+    quantity: number;
+    reserved: number;
+    used: number;
+    all: number;
+    imageUrl: string | null;
+    status: string;
+    createdAt: string;
+    catalogsEnum: {
+      name: string;
+      enumValue: string[];
+      description: string;
+      type: string;
+    } | null;
+    vehicleModelsEnum: {
+      name: string;
+      enumValue: string[];
+      description: string;
+      type: string;
+    } | null;
+    catalogVehicleMapping: Record<string, string[]> | null;
+  }> {
+    return this.request(`/parts/${partId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
     });
   }
 
@@ -675,6 +860,65 @@ class ApiClient {
     });
   }
 
+  async getAllFeedbacks(): Promise<Array<{
+    id: number;
+    rating: number;
+    comment: string;
+    tags: Array<{
+      id: number;
+      content: string;
+      ratingTarget: number;
+    }>;
+    bookingId: number;
+    customerId: number;
+    customerName: string;
+    createdAt: string;
+  }>> {
+    return this.request('/feedbacks', {
+      method: 'GET',
+    });
+  }
+
+  async askChatBot(question: string): Promise<{
+    answer?: string;
+    message?: string;
+  }> {
+    const url = this.joinUrl(this.baseURL, '/bot/ask');
+    const token = localStorage.getItem('accessToken');
+
+    const config: RequestInit = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ question }),
+    };
+
+    try {
+      const response = await fetch(url, config);
+
+      if (!response.ok) {
+        const message = await parseErrorResponse(response);
+        throw new Error(message);
+      }
+
+      // Try to parse as JSON first
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      } else {
+        // If not JSON, read as text
+        const text = await response.text();
+        return { answer: text, message: text };
+      }
+    } catch (error) {
+      console.error('Chatbot API request failed:', error);
+      throw error;
+    }
+  }
+
   async createFeedback(payload: {
     rating: number;
     comment: string;
@@ -713,6 +957,51 @@ class ApiClient {
 
     return this.request('/feedbacks', {
       method: 'POST',
+      body: JSON.stringify(requestPayload),
+    });
+  }
+
+  async updateFeedback(
+    feedbackId: number,
+    payload: {
+      rating: number;
+      comment: string;
+      bookingId: number;
+      tagIds?: number[];
+    }
+  ): Promise<{
+    id: number;
+    rating: number;
+    comment: string;
+    tags: Array<{
+      id: number;
+      content: string;
+      ratingTarget: number;
+    }>;
+    bookingId: number;
+    customerId: number;
+    customerName: string;
+    createdAt: string;
+  }> {
+    // Chỉ gửi tagIds nếu có tags được chọn
+    const requestPayload: {
+      rating: number;
+      comment: string;
+      bookingId: number;
+      tagIds?: number[];
+    } = {
+      rating: payload.rating,
+      comment: payload.comment,
+      bookingId: payload.bookingId,
+    };
+
+    // Chỉ thêm tagIds nếu có tags được chọn
+    if (payload.tagIds && payload.tagIds.length > 0) {
+      requestPayload.tagIds = payload.tagIds;
+    }
+
+    return this.request(`/feedbacks/${feedbackId}`, {
+      method: 'PUT',
       body: JSON.stringify(requestPayload),
     });
   }

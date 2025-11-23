@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { authService } from '@/lib/auth';
 import { showApiErrorToast } from '@/lib/responseHandler';
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -50,8 +49,8 @@ export default function Login() {
       // Map roleDisplayName to routes
       const roleRoutes: Record<string, string> = {
         'Khách hàng': '/customer',
-        'Nhân viên': '/service/staff',
-        'Kỹ thuật viên': '/service/technician',
+        'Nhân viên': '/service/customers',
+        'Kỹ thuật viên': '/service/maintenance-process',
         'Quản trị viên': '/service/admin',
       };
 

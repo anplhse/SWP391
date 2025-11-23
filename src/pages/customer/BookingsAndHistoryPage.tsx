@@ -1,32 +1,30 @@
 import { DataTable } from '@/components/DataTable';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/useDebounce';
+import { apiClient } from '@/lib/api';
 import { authService } from '@/lib/auth';
+import { getBookingStatusBadge, getBookingStatusLabel, mapBookingStatusToFrontend } from '@/lib/bookingStatusUtils';
 import { bookingApi } from '@/lib/bookingUtils';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { ColumnDef } from '@tanstack/react-table';
 import {
-  AlertCircle,
   Calendar,
-  CheckCircle2,
-  Clock,
   Eye,
   Search,
   Trash2,
   X
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 
-type BookingStatus = 'pending' | 'confirmed' | 'paid' | 'in_progress' | 'completed' | 'cancelled' | 'rejected';
+type BookingStatus = 'pending' | 'confirmed' | 'assigned' | 'paid' | 'in_progress' | 'completed' | 'cancelled' | 'rejected';
 
 interface BookingRecord {
   id: string;
@@ -47,10 +45,11 @@ export default function BookingsAndHistoryPage() {
   const user = { email: 'customer@example.com', role: 'customer', userType: 'customer' };
 
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
+  const [bookingStatuses, setBookingStatuses] = useState<string[]>([]);
 
   const filterSchema = z.object({
     query: z.string().optional(),
-    status: z.enum(['all', 'pending', 'confirmed', 'paid', 'in_progress', 'completed', 'cancelled', 'rejected']).optional(),
+    status: z.enum(['all', 'pending', 'confirmed', 'assigned', 'paid', 'in_progress', 'completed', 'cancelled', 'rejected']).optional(),
   });
   type FilterForm = z.infer<typeof filterSchema>;
 
@@ -63,6 +62,20 @@ export default function BookingsAndHistoryPage() {
   const debouncedQuery = useDebounce(watchFilters.query || '', 300);
 
   useEffect(() => {
+    const loadBookingStatuses = async () => {
+      try {
+        const statusData = await apiClient.getBookingStatusEnum();
+        setBookingStatuses(statusData.enumValue);
+      } catch (e) {
+        console.error('Failed to load booking statuses', e);
+        // Fallback to default statuses if API fails
+        setBookingStatuses(['PENDING', 'CONFIRMED', 'PAID', 'ASSIGNED', 'IN_PROGRESS', 'MAINTENANCE_COMPLETE', 'CANCELLED', 'REJECTED']);
+      }
+    };
+    loadBookingStatuses();
+  }, []);
+
+  useEffect(() => {
     const loadBookings = async () => {
       try {
         const currentUser = authService.getAuthState().user;
@@ -73,18 +86,7 @@ export default function BookingsAndHistoryPage() {
           const dt = b.scheduleDateTime?.value || '';
           const [date, time] = dt.split(' ');
           const toStatus = (s: string): BookingStatus => {
-            const normalized = (s || '').toUpperCase();
-            switch (normalized) {
-              case 'PENDING': return 'pending';
-              case 'CONFIRMED': return 'confirmed';
-              case 'PAID': return 'paid';
-              case 'IN_PROGRESS': return 'in_progress';
-              case 'MAINTENANCE_COMPLETE': return 'completed';
-              case 'COMPLETED': return 'completed';
-              case 'CANCELLED': return 'cancelled';
-              case 'REJECTED': return 'rejected';
-              default: return 'pending';
-            }
+            return mapBookingStatusToFrontend(s);
           };
           return {
             id: String(b.id),
@@ -130,25 +132,14 @@ export default function BookingsAndHistoryPage() {
   // Gộp tất cả vào 1 danh sách duy nhất
   const allBookings = filteredBookings;
 
+  const getStatusLabel = useCallback((status: string): string => {
+    return getBookingStatusLabel(status);
+  }, []);
+
   const getStatusBadge = useCallback((status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="outline" className="gap-1"><AlertCircle className="w-3 h-3" />Chờ xác nhận</Badge>;
-      case 'confirmed':
-        return <Badge variant="default" className="gap-1"><CheckCircle2 className="w-3 h-3" />Đã xác nhận</Badge>;
-      case 'paid':
-        return <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 gap-1"><CheckCircle2 className="w-3 h-3" />Đã thanh toán</Badge>;
-      case 'in_progress':
-        return <Badge variant="secondary" className="gap-1"><Clock className="w-3 h-3" />Đang thực hiện</Badge>;
-      case 'completed':
-        return <Badge variant="default" className="bg-green-600 hover:bg-green-700 gap-1"><CheckCircle2 className="w-3 h-3" />Hoàn thành</Badge>;
-      case 'cancelled':
-        return <Badge variant="destructive" className="gap-1"><AlertCircle className="w-3 h-3" />Đã hủy</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive" className="gap-1"><X className="w-3 h-3" />Từ chối</Badge>;
-      default:
-        return null;
-    }
+    // Convert frontend status back to API status for badge
+    const apiStatus = status === 'completed' ? 'MAINTENANCE_COMPLETE' : status.toUpperCase();
+    return getBookingStatusBadge(apiStatus);
   }, []);
 
   const handleViewDetails = useCallback((bookingId: string) => {
@@ -274,13 +265,19 @@ export default function BookingsAndHistoryPage() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="all">Tất cả</SelectItem>
-                        <SelectItem value="pending">Chờ xác nhận</SelectItem>
-                        <SelectItem value="confirmed">Đã xác nhận</SelectItem>
-                        <SelectItem value="paid">Đã thanh toán</SelectItem>
-                        <SelectItem value="in_progress">Đang thực hiện</SelectItem>
-                        <SelectItem value="completed">Hoàn thành</SelectItem>
-                        <SelectItem value="cancelled">Đã hủy</SelectItem>
-                        <SelectItem value="rejected">Từ chối</SelectItem>
+                        {bookingStatuses.map((status) => {
+                          const normalizedStatus = status.toLowerCase().replace('_', '_');
+                          let filterValue = normalizedStatus;
+                          // Map API status to filter value
+                          if (status === 'MAINTENANCE_COMPLETE') {
+                            filterValue = 'completed';
+                          }
+                          return (
+                            <SelectItem key={`status-${status}`} value={filterValue}>
+                              {getStatusLabel(status)}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </FormItem>

@@ -1,3 +1,4 @@
+import { ChatBot } from '@/components/ChatBot';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -176,6 +177,9 @@ export default function CustomerDashboard() {
           <div className="mt-8 border-t pt-4 text-xs text-muted-foreground">© {new Date().getFullYear()} VinFast Service Workshop</div>
         </div>
       </footer>
+
+      {/* ChatBot */}
+      <ChatBot />
     </div>
   );
 }

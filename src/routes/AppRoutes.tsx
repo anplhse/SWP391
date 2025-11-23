@@ -33,12 +33,11 @@ import VehicleProfilePage from '@/pages/customer/VehicleProfilePage';
 
 // Service center pages
 import AdminDashboard from '@/pages/service/AdminDashboard';
-import StaffDashboard from '@/pages/service/StaffDashboard';
-import TechnicianDashboard from '@/pages/service/TechnicianDashboard';
 
 // Staff pages
 import AppointmentManagementPage from '@/pages/service/staff/AppointmentManagementPage';
 import CustomerManagementPage from '@/pages/service/staff/CustomerManagementPage';
+import FeedbackManagementPage from '@/pages/service/staff/FeedbackManagementPage';
 import StaffMaintenanceProcessPage from '@/pages/service/staff/MaintenanceProcessPage';
 import PartsManagementPage from '@/pages/service/staff/PartsManagementPage';
 import ServiceManagementPage from '@/pages/service/staff/ServiceManagementPage';
@@ -88,7 +87,6 @@ export default function AppRoutes() {
             <Route path="customer/vehicle/:vehicleId" element={<ProtectedRoute requiredRole="Khách hàng"><VehicleProfilePage /></ProtectedRoute>} />
 
             {/* Service Center routes */}
-            <Route path="service/staff" element={<ProtectedRoute requiredRole="Nhân viên"><StaffDashboard /></ProtectedRoute>} />
             <Route path="service/customers" element={<ProtectedRoute requiredRole="Nhân viên"><CustomerManagementPage /></ProtectedRoute>} />
             <Route path="service/vehicles" element={<ProtectedRoute requiredRole="Nhân viên"><StaffVehicleManagementPage /></ProtectedRoute>} />
             <Route path="service/appointments" element={<ProtectedRoute requiredRole="Nhân viên"><AppointmentManagementPage /></ProtectedRoute>} />
@@ -96,8 +94,8 @@ export default function AppRoutes() {
             <Route path="service/maintenance" element={<ProtectedRoute requiredRole="Nhân viên"><StaffMaintenanceProcessPage /></ProtectedRoute>} />
             <Route path="service/parts" element={<ProtectedRoute requiredRole="Nhân viên"><PartsManagementPage /></ProtectedRoute>} />
             <Route path="service/vehicle-models" element={<ProtectedRoute requiredRole="Nhân viên"><VehicleModelsPage /></ProtectedRoute>} />
+            <Route path="service/feedbacks" element={<ProtectedRoute requiredRole="Nhân viên"><FeedbackManagementPage /></ProtectedRoute>} />
 
-            <Route path="service/technician" element={<ProtectedRoute requiredRole="Kỹ thuật viên"><TechnicianDashboard /></ProtectedRoute>} />
             <Route path="service/assigned-tasks" element={<ProtectedRoute requiredRole="Kỹ thuật viên"><AssignedTasksPage /></ProtectedRoute>} />
             <Route path="service/maintenance-process" element={<ProtectedRoute requiredRole="Kỹ thuật viên"><TechnicianMaintenanceProcessPage /></ProtectedRoute>} />
             <Route path="service/vehicle-status" element={<ProtectedRoute requiredRole="Kỹ thuật viên"><VehicleStatusPage /></ProtectedRoute>} />

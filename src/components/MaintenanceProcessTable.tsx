@@ -2,10 +2,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { useDebounce } from '@/hooks/useDebounce';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Search, X } from 'lucide-react';
@@ -16,6 +16,7 @@ import { z } from 'zod';
 interface MaintenanceTask {
   id: string;
   bookingId: number;
+  jobId?: number;
   vehiclePlate: string;
   vehicleModel: string;
   customerName: string;
@@ -80,7 +81,7 @@ export function MaintenanceProcessTable({
 
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
-  const totalPages = Math.ceil(filteredTasks.length / pageSize);
+  const totalPages = filteredTasks.length > 0 ? Math.ceil(filteredTasks.length / pageSize) : 1;
 
   const paginatedTasks = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
@@ -91,40 +92,13 @@ export function MaintenanceProcessTable({
     setCurrentPage(1);
   }, [debouncedSearchTerm, watchFilters.status]);
 
-  const getPageNumbers = () => {
-    const pages: (number | 'ellipsis')[] = [];
-    const maxVisible = 5;
-
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      pages.push(1);
-      if (currentPage > 3) {
-        pages.push('ellipsis');
-      }
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
-      for (let i = start; i <= end; i++) {
-        if (i !== 1 && i !== totalPages) {
-          pages.push(i);
-        }
-      }
-      if (currentPage < totalPages - 2) {
-        pages.push('ellipsis');
-      }
-      if (totalPages > 1) {
-        pages.push(totalPages);
-      }
-    }
-    return pages;
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
         return <Badge variant="secondary">Chờ xử lý</Badge>;
+      case 'assigned':
+        return <Badge variant="default" className="bg-purple-500">Đã phân công</Badge>;
       case 'in_progress':
         return <Badge variant="default">Đang thực hiện</Badge>;
       case 'completed':
@@ -183,6 +157,7 @@ export function MaintenanceProcessTable({
                     <SelectContent>
                       <SelectItem value="all">Tất cả</SelectItem>
                       <SelectItem value="pending">Chờ xử lý</SelectItem>
+                      <SelectItem value="assigned">Đã phân công</SelectItem>
                       <SelectItem value="in_progress">Đang thực hiện</SelectItem>
                       <SelectItem value="completed">Hoàn thành</SelectItem>
                       <SelectItem value="cancelled">Đã hủy</SelectItem>
@@ -219,7 +194,7 @@ export function MaintenanceProcessTable({
             ) : (
               paginatedTasks.map((task) => (
                 <TableRow key={task.id}>
-                  <TableCell className="font-medium">#{task.bookingId}</TableCell>
+                  <TableCell className="font-medium">#{task.jobId || task.bookingId}</TableCell>
                   <TableCell>{task.vehiclePlate}</TableCell>
                   <TableCell>{task.customerName}</TableCell>
                   <TableCell>{task.technician}</TableCell>
@@ -238,11 +213,11 @@ export function MaintenanceProcessTable({
                             Gán KTV
                           </Button>
                         )}
-                        {task.status === 'pending' && task.technician !== 'Chưa phân công' && (
+                        {(task.status === 'pending' && task.technician !== 'Chưa phân công') || task.status === 'assigned' ? (
                           <Button size="sm" onClick={() => onStartTask(task.id)}>
                             Bắt đầu
                           </Button>
-                        )}
+                        ) : null}
                         {task.status === 'in_progress' && (
                           <Button size="sm" onClick={() => onCompleteTask(task.id)}>
                             Hoàn thành
@@ -262,56 +237,11 @@ export function MaintenanceProcessTable({
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Hiển thị {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredTasks.length)} trong tổng số {filteredTasks.length} kết quả
-          </div>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage > 1) setCurrentPage(currentPage - 1);
-                  }}
-                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                />
-              </PaginationItem>
-              {getPageNumbers().map((page, index) => (
-                <PaginationItem key={index}>
-                  {page === 'ellipsis' ? (
-                    <PaginationEllipsis />
-                  ) : (
-                    <PaginationLink
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setCurrentPage(page as number);
-                      }}
-                      isActive={currentPage === page}
-                      className="cursor-pointer"
-                    >
-                      {page}
-                    </PaginationLink>
-                  )}
-                </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-                  }}
-                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+      <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

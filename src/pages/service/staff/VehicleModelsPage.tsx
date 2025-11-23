@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/useDebounce';
 import { apiClient } from '@/lib/api';
@@ -118,7 +119,7 @@ export default function VehicleModelsPage() {
     );
   }, [models, debouncedSearch, watchFilters.status]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const totalPages = filtered.length > 0 ? Math.ceil(filtered.length / pageSize) : 1;
   const currentPage = Math.min(page, totalPages);
   const startIdx = (currentPage - 1) * pageSize;
   const pageItems = filtered.slice(startIdx, startIdx + pageSize);
@@ -303,10 +304,10 @@ export default function VehicleModelsPage() {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                      <Input
-                        placeholder="Tìm kiếm model/brand..."
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Tìm kiếm model/brand..."
                         {...field}
                         onChange={(e) => {
                           field.onChange(e);
@@ -326,7 +327,7 @@ export default function VehicleModelsPage() {
                           <X className="w-4 h-4" />
                         </button>
                       )}
-                    </div>
+          </div>
                   </FormControl>
                 </FormItem>
               )}
@@ -341,16 +342,16 @@ export default function VehicleModelsPage() {
                     setPage(1);
                   }} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue placeholder="Trạng thái" />
-                      </SelectTrigger>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Trạng thái" />
+            </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                      <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-                      <SelectItem value="INACTIVE">INACTIVE</SelectItem>
-                    </SelectContent>
-                  </Select>
+            <SelectContent>
+              <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
+              <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+              <SelectItem value="INACTIVE">INACTIVE</SelectItem>
+            </SelectContent>
+          </Select>
                 </FormItem>
               )}
             />
@@ -361,10 +362,6 @@ export default function VehicleModelsPage() {
             <Plus className="h-4 w-4 mr-2" />
             Thêm mới
           </Button>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage <= 1}>Trước</Button>
-            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>Sau</Button>
-          </div>
         </div>
       </div>
 
@@ -423,6 +420,13 @@ export default function VehicleModelsPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination */}
+      <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setPage}
+      />
 
       {/* Detail Dialog */}
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>

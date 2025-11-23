@@ -5,6 +5,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAvailableSlots } from '@/hooks/useAvailableSlots';
@@ -515,27 +516,9 @@ export function BookingForm({ services }: BookingFormProps) {
                           </span>
                           {totalPages > 1 && (
                             <div className="flex items-center gap-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                                disabled={currentPage === 1}
-                              >
-                                Trước
-                              </Button>
                               <span className="text-sm text-muted-foreground">
                                 Trang {currentPage} / {totalPages}
                               </span>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                                disabled={currentPage === totalPages}
-                              >
-                                Sau
-                              </Button>
                             </div>
                           )}
                         </div>
@@ -656,6 +639,15 @@ export function BookingForm({ services }: BookingFormProps) {
                             )}
                           </TableBody>
                         </Table>
+                      </div>
+
+                      {/* Pagination */}
+                      <div className="mt-4">
+                        <TablePagination
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          onPageChange={setCurrentPage}
+                        />
                       </div>
                     </div>
                     <FormMessage />

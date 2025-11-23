@@ -1,11 +1,12 @@
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { useDebounce } from '@/hooks/useDebounce';
+import { apiClient } from '@/lib/api';
+import { getBookingStatusBadge, getBookingStatusLabel, mapBookingStatusToFrontend } from '@/lib/bookingStatusUtils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle2, Edit, Eye, Package, Search, X, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -31,7 +32,7 @@ interface Appointment {
   };
   date: string;
   time: string;
-  status: 'pending' | 'confirmed' | 'paid' | 'in_progress' | 'completed' | 'cancelled' | 'rejected';
+  status: 'pending' | 'confirmed' | 'assigned' | 'paid' | 'in_progress' | 'completed' | 'cancelled' | 'rejected';
   center: string;
   technician?: string;
   notes?: string;
@@ -71,6 +72,8 @@ export function AppointmentTable({
   isLoadingParts = {},
   showActions = true
 }: AppointmentTableProps) {
+  const [bookingStatuses, setBookingStatuses] = useState<string[]>([]);
+
   const filterForm = useForm<FilterForm>({
     resolver: zodResolver(filterSchema),
     defaultValues: { search: '', status: 'all' }
@@ -78,6 +81,24 @@ export function AppointmentTable({
 
   const watchFilters = filterForm.watch();
   const debouncedSearch = useDebounce(watchFilters.search || '', 300);
+
+  useEffect(() => {
+    const loadBookingStatuses = async () => {
+      try {
+        const statusData = await apiClient.getBookingStatusEnum();
+        setBookingStatuses(statusData.enumValue);
+      } catch (e) {
+        console.error('Failed to load booking statuses', e);
+        // Fallback to default statuses if API fails
+        setBookingStatuses(['PENDING', 'CONFIRMED', 'PAID', 'ASSIGNED', 'IN_PROGRESS', 'MAINTENANCE_COMPLETE', 'CANCELLED', 'REJECTED']);
+      }
+    };
+    loadBookingStatuses();
+  }, []);
+
+  const getStatusLabel = (status: string): string => {
+    return getBookingStatusLabel(status);
+  };
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter(appointment => {
@@ -110,64 +131,17 @@ export function AppointmentTable({
     setCurrentPage(1);
   }, [debouncedSearch, watchFilters.status]);
 
-  const getPageNumbers = () => {
-    const pages: (number | 'ellipsis')[] = [];
-    const maxVisible = 5;
-
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      pages.push(1);
-      if (currentPage > 3) {
-        pages.push('ellipsis');
-      }
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
-      for (let i = start; i <= end; i++) {
-        if (i !== 1 && i !== totalPages) {
-          pages.push(i);
-        }
-      }
-      if (currentPage < totalPages - 2) {
-        pages.push('ellipsis');
-      }
-      if (totalPages > 1) {
-        pages.push(totalPages);
-      }
-    }
-    return pages;
-  };
 
   const getStatusBadge = (status: string) => {
+    // Convert frontend status to API status
     const normalized = (status || '').toLowerCase();
-    switch (normalized) {
-      case 'pending':
-      case 'chờ xác nhận':
-        return <Badge variant="secondary">Chờ xác nhận</Badge>;
-      case 'confirmed':
-      case 'đã xác nhận':
-        return <Badge variant="default">Đã xác nhận</Badge>;
-      case 'paid':
-      case 'đã thanh toán':
-        return <Badge variant="default" className="bg-blue-500">Đã thanh toán</Badge>;
-      case 'in_progress':
-      case 'đang thực hiện':
-        return <Badge variant="destructive">Đang thực hiện</Badge>;
-      case 'completed':
-      case 'hoàn thành':
-      case 'maintenance_complete':
-        return <Badge className="bg-green-500">Hoàn thành</Badge>;
-      case 'cancelled':
-      case 'đã hủy':
-        return <Badge variant="destructive">Đã hủy</Badge>;
-      case 'rejected':
-      case 'từ chối':
-        return <Badge variant="destructive">Từ chối</Badge>;
-      default:
-        return <Badge variant="outline">{status || 'Không xác định'}</Badge>;
+    let apiStatus = status;
+    if (normalized === 'completed' || normalized === 'maintenance_complete') {
+      apiStatus = 'MAINTENANCE_COMPLETE';
+    } else {
+      apiStatus = status.toUpperCase();
     }
+    return getBookingStatusBadge(apiStatus);
   };
 
   return (
@@ -205,12 +179,14 @@ export function AppointmentTable({
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="all">Tất cả</SelectItem>
-                    <SelectItem value="pending">Chờ xác nhận</SelectItem>
-                    <SelectItem value="confirmed">Đã xác nhận</SelectItem>
-                    <SelectItem value="paid">Đã thanh toán</SelectItem>
-                    <SelectItem value="in_progress">Đang thực hiện</SelectItem>
-                    <SelectItem value="completed">Hoàn thành</SelectItem>
-                    <SelectItem value="cancelled">Đã hủy</SelectItem>
+                    {bookingStatuses.map((status) => {
+                      const filterValue = mapBookingStatusToFrontend(status);
+                      return (
+                        <SelectItem key={`status-${status}`} value={filterValue}>
+                          {getBookingStatusLabel(status)}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </FormItem>
@@ -324,56 +300,11 @@ export function AppointmentTable({
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Hiển thị {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredAppointments.length)} trong tổng số {filteredAppointments.length} kết quả
-          </div>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage > 1) setCurrentPage(currentPage - 1);
-                  }}
-                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                />
-              </PaginationItem>
-              {getPageNumbers().map((page, index) => (
-                <PaginationItem key={index}>
-                  {page === 'ellipsis' ? (
-                    <PaginationEllipsis />
-                  ) : (
-                    <PaginationLink
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setCurrentPage(page as number);
-                      }}
-                      isActive={currentPage === page}
-                      className="cursor-pointer"
-                    >
-                      {page}
-                    </PaginationLink>
-                  )}
-                </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-                  }}
-                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+      <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

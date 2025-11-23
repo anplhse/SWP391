@@ -118,7 +118,7 @@ export default function VehicleManagementPage() {
       }
     })();
     return () => { mounted = false; };
-  }, [navigate]);
+  }, [navigate, toast]);
 
   useEffect(() => {
     const loadUserVehicles = async () => {
@@ -371,21 +371,27 @@ export default function VehicleManagementPage() {
     }
   };
 
-  const handleDeleteVehicle = (vehicleId: string) => {
+  const handleDeleteVehicle = async (vehicleId: string) => {
     const vehicle = vehicles.find(v => v.id === vehicleId);
-    setVehicles(vehicles.filter(v => v.id !== vehicleId));
-    setVehicleDetails(prev => {
-      const updated = { ...prev };
-      delete updated[vehicleId];
-      return updated;
-    });
+    if (!vehicle) return;
 
-    // Không dùng sessionStore
+    try {
+      await apiClient.deleteVehicle(vehicle.vin);
+      setVehicles(vehicles.filter(v => v.id !== vehicleId));
+      setVehicleDetails(prev => {
+        const updated = { ...prev };
+        delete updated[vehicleId];
+        return updated;
+      });
 
-    toast({
-      title: "Xóa xe thành công!",
-      description: `Đã xóa ${vehicle?.name} khỏi danh sách`,
-    });
+      toast({
+        title: "Xóa xe thành công!",
+        description: `Đã xóa ${vehicle.name} khỏi danh sách`,
+      });
+    } catch (error) {
+      console.error('Failed to delete vehicle:', error);
+      showApiErrorToast(error, toast, 'Không thể xóa xe');
+    }
   };
 
   const handleViewVehicle = (vehicleId: string) => {

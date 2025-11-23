@@ -4,11 +4,12 @@ import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { useDebounce } from '@/hooks/useDebounce';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Clock, Edit, Plus, Search, Trash2, Wrench, X } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -116,12 +117,27 @@ export function ServiceTable({
     return filtered;
   }, [services, debouncedSearchQuery, watchFilters.status, statusFilter, selectedModel, mode]);
 
+  // Internal pagination state if onPageChange is not provided
+  const [internalPage, setInternalPage] = useState(1);
+
+  // Calculate totalPages from filtered services
+  const calculatedTotalPages = Math.ceil(filteredServices.length / itemsPerPage);
+  const effectiveTotalPages = totalPages > 1 ? totalPages : calculatedTotalPages;
+  const effectiveCurrentPage = onPageChange ? Math.min(currentPage, effectiveTotalPages || 1) : internalPage;
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (!onPageChange) {
+      setInternalPage(1);
+    }
+  }, [debouncedSearchQuery, watchFilters.status, onPageChange]);
+
   // Paginate filtered services
   const paginatedServices = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
+    const startIndex = (effectiveCurrentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return filteredServices.slice(startIndex, endIndex);
-  }, [filteredServices, currentPage, itemsPerPage]);
+  }, [filteredServices, effectiveCurrentPage, itemsPerPage]);
 
   const handleSearchChange = (value: string) => {
     filterForm.setValue('search', value);
@@ -193,7 +209,7 @@ export function ServiceTable({
     selectedServices.includes(service.id)
   );
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const startIndex = (effectiveCurrentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, filteredServices.length);
 
   return (
@@ -263,71 +279,45 @@ export function ServiceTable({
             )}
           </form>
         </Form>
-        {showSelection && (
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleSelectAll}
-              disabled={paginatedServices.length === 0}
-            >
-              Chọn tất cả
+        <div className="flex items-center gap-4">
+          {showSelection && (
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAll}
+                disabled={paginatedServices.length === 0}
+              >
+                Chọn tất cả
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDeselectAll}
+                disabled={paginatedServices.length === 0}
+              >
+                Bỏ chọn tất cả
+              </Button>
+            </div>
+          )}
+          {showActions && onAdd && (
+            <Button onClick={onAdd}>
+              <Plus className="w-4 h-4 mr-2" />
+              Thêm dịch vụ
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleDeselectAll}
-              disabled={paginatedServices.length === 0}
-            >
-              Bỏ chọn tất cả
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        {showSelection && selectedServices.length > 0 && (
+      {showSelection && selectedServices.length > 0 && (
+        <div className="flex items-center gap-4">
           <Badge variant="secondary" className="text-sm">
             Đã chọn {selectedServices.length} dịch vụ
           </Badge>
-        )}
-        <span className="text-sm text-muted-foreground">
-          Hiển thị {startIndex + 1}-{endIndex} trong {filteredServices.length} dịch vụ
-        </span>
-        {showActions && onAdd && (
-          <Button onClick={onAdd}>
-            <Plus className="w-4 h-4 mr-2" />
-            Thêm dịch vụ
-          </Button>
-        )}
-        {totalPages > 1 && onPageChange && (
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-            >
-              Trước
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              Trang {currentPage} / {totalPages}
-            </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-            >
-              Sau
-            </Button>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Services Table */}
       <div className="border rounded-lg">
@@ -546,6 +536,19 @@ export function ServiceTable({
           <p>Không tìm thấy dịch vụ phù hợp</p>
         </div>
       )}
+
+      {/* Pagination */}
+      <TablePagination
+        currentPage={effectiveCurrentPage}
+        totalPages={effectiveTotalPages}
+        onPageChange={(page) => {
+          if (onPageChange) {
+            onPageChange(page);
+          } else {
+            setInternalPage(page);
+          }
+        }}
+      />
     </div>
   );
 }
