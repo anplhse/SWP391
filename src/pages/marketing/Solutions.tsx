@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface VehicleModel {
@@ -128,7 +128,7 @@ export default function Solutions() {
   const [hoveredVehicle, setHoveredVehicle] = useState<number | null>(null);
 
   return (
-    <div 
+    <div
       className="min-h-screen text-foreground relative overflow-hidden"
       style={{
         background: 'linear-gradient(-45deg, hsl(var(--chart-5)), hsl(var(--chart-4)), hsl(var(--chart-3)), hsl(var(--muted)))',
@@ -142,18 +142,37 @@ export default function Solutions() {
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
       `}</style>
+<<<<<<< HEAD
    
       {/* Header */}
       <header className="w-full border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 bg-gradient-to-r from-secondary/50 to-secondary px-4 py-2 rounded-2xl shadow-xl border border-border">
             <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center shadow-lg">
+=======
+
+      {/* Decorative clouds */}
+      <div className="absolute top-10 left-10 w-32 h-32 bg-card/20 rounded-full blur-3xl" style={{ animation: 'float 6s ease-in-out infinite' }}></div>
+      <div className="absolute top-40 right-20 w-40 h-40 bg-card/20 rounded-full blur-3xl" style={{ animation: 'float 8s ease-in-out infinite 1s' }}></div>
+      <div className="absolute bottom-20 left-1/4 w-36 h-36 bg-card/20 rounded-full blur-3xl" style={{ animation: 'float 7s ease-in-out infinite 2s' }}></div>
+
+      {/* Header Navigation */}
+      <header className="w-full bg-white relative z-30 rounded-b-3xl shadow-xl pt-4 pb-4">
+        <div className="mx-auto max-w-6xl px-4 flex items-center justify-between">
+          <div className="flex items-center gap-3 relative z-30 bg-gradient-to-r from-orange-50 to-orange-100 px-4 py-2 rounded-2xl shadow-lg border border-gray-200"
+            style={{
+              boxShadow: '0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.5)',
+            }}
+          >
+            <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center shadow-md">
+>>>>>>> 6947e3eca92bc3caddcfa3af32014578d55d337d
               <svg className="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11C5.84 5 5.28 5.42 5.08 6.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z" />
               </svg>
             </div>
             <span className="font-semibold text-foreground">VinFast Service Workshop</span>
           </div>
+<<<<<<< HEAD
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="/about" className="hover:text-foreground">Giới thiệu</a>
             <a href="/services" className="hover:text-foreground">Dịch vụ</a>
@@ -163,13 +182,17 @@ export default function Solutions() {
           </nav>
           <div className="flex items-center gap-3">
             <Button 
+=======
+          <div className="flex items-center gap-3 relative z-30">
+            <Button
+>>>>>>> 6947e3eca92bc3caddcfa3af32014578d55d337d
               onClick={() => navigate('/')}
               variant="outline"
               className="font-semibold px-6 py-2 rounded-xl border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-105"
             >
               Trang chủ
             </Button>
-            <Button 
+            <Button
               onClick={() => navigate('/login')}
               className="bg-primary hover:bg-primary-hover text-primary-foreground font-semibold px-6 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
@@ -187,9 +210,15 @@ export default function Solutions() {
               🚗 Xe điện VinFast
             </span>
           </div>
+<<<<<<< HEAD
           <h1 
             className="text-4xl md:text-6xl font-bold text-foreground mb-6"
             style={{ 
+=======
+          <h1
+            className="text-5xl md:text-7xl font-black mb-5 text-primary-foreground"
+            style={{
+>>>>>>> 6947e3eca92bc3caddcfa3af32014578d55d337d
               letterSpacing: '-0.03em',
               textShadow: '0 4px 20px hsl(var(--foreground) / 0.2)'
             }}
@@ -203,12 +232,11 @@ export default function Solutions() {
           {vehicleModels.map((vehicle, index) => (
             <div
               key={index}
-              className={`rounded-xl overflow-hidden bg-card shadow-lg hover:shadow-xl transition-smooth ${
-                vehicle.status === 'INACTIVE' ? 'opacity-60' : ''
-              }`}
+              className={`rounded-xl overflow-hidden bg-card shadow-lg hover:shadow-xl transition-smooth ${vehicle.status === 'INACTIVE' ? 'opacity-60' : ''
+                }`}
             >
               {/* Vehicle Image with Overlay Info */}
-              <div 
+              <div
                 className="relative h-64 bg-gradient-to-br from-muted to-muted cursor-pointer group overflow-hidden"
                 onMouseEnter={() => setHoveredVehicle(index)}
                 onMouseLeave={() => setHoveredVehicle(null)}
@@ -221,7 +249,7 @@ export default function Solutions() {
                     (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=No+Image';
                   }}
                 />
-                
+
                 {vehicle.status === 'INACTIVE' && (
                   <div className="absolute top-4 right-4 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-semibold z-10">
                     Ngừng sản xuất
