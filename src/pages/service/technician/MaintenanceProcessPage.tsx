@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { AlertCircle, CheckCircle, Clock, Play } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Play, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface MaintenanceStep {
@@ -36,8 +36,20 @@ interface MaintenanceTask {
 
 export default function MaintenanceProcessPage() {
   const [tasks, setTasks] = useState<MaintenanceTask[]>([]);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+
+  const filterSchema = z.object({
+    search: z.string().optional(),
+    status: z.string().optional(),
+  });
+  type FilterForm = z.infer<typeof filterSchema>;
+
+  const filterForm = useForm<FilterForm>({
+    resolver: zodResolver(filterSchema),
+    defaultValues: { search: '', status: 'all' }
+  });
+
+  const watchFilters = filterForm.watch();
+  const debouncedSearchTerm = useDebounce(watchFilters.search || '', 300);
   const [selectedTask, setSelectedTask] = useState<MaintenanceTask | null>(null);
 
   useEffect(() => {
@@ -72,14 +84,16 @@ export default function MaintenanceProcessPage() {
     }
   };
 
-  const filteredTasks = tasks.filter(task => {
-    const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
-    const matchesSearch = searchTerm === '' ||
-      task.vehiclePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.serviceType.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      const matchesStatus = (watchFilters.status || 'all') === 'all' || task.status === watchFilters.status;
+      const matchesSearch = !debouncedSearchTerm.trim() ||
+        task.vehiclePlate.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        task.customerName.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        task.serviceType.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+      return matchesStatus && matchesSearch;
+    });
+  }, [tasks, watchFilters.status, debouncedSearchTerm]);
 
   const handleStartTask = (taskId: string) => {
     setTasks(tasks.map(task =>
@@ -130,28 +144,58 @@ export default function MaintenanceProcessPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Input
-              placeholder="Tìm kiếm..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64"
+        <Form {...filterForm}>
+          <form className="flex items-center gap-3">
+            <FormField
+              name="search"
+              control={filterForm.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <div className="relative">
+                      <Input
+                        placeholder="Tìm kiếm..."
+                        {...field}
+                        className="w-64 pr-10"
+                      />
+                      {field.value && (
+                        <button
+                          type="button"
+                          onClick={() => field.onChange('')}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </FormControl>
+                </FormItem>
+              )}
             />
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="pending">Chờ xử lý</SelectItem>
-              <SelectItem value="in_progress">Đang thực hiện</SelectItem>
-              <SelectItem value="completed">Hoàn thành</SelectItem>
-              <SelectItem value="cancelled">Đã hủy</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+            <FormField
+              name="status"
+              control={filterForm.control}
+              render={({ field }) => (
+                <FormItem>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-32">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="pending">Chờ xử lý</SelectItem>
+                      <SelectItem value="in_progress">Đang thực hiện</SelectItem>
+                      <SelectItem value="completed">Hoàn thành</SelectItem>
+                      <SelectItem value="cancelled">Đã hủy</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+          </form>
+        </Form>
       </div>
 
       <Table>

@@ -2,10 +2,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useDebounce } from '@/hooks/useDebounce';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckCircle2, Edit, Eye, Package, Search, XCircle } from 'lucide-react';
+import { CheckCircle2, Edit, Eye, Package, Search, X, XCircle } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -74,21 +77,68 @@ export function AppointmentTable({
   });
 
   const watchFilters = filterForm.watch();
-  const filteredAppointments = appointments.filter(appointment => {
-    const term = (watchFilters.search || '').toLowerCase().trim();
-    const matchesSearch = term === '' ||
-      appointment.id.toLowerCase().includes(term) ||
-      appointment.date.toLowerCase().includes(term) ||
-      appointment.time.toLowerCase().includes(term) ||
-      (appointment.customerName && appointment.customerName.toLowerCase().includes(term)) ||
-      appointment.vehicle.plate.toLowerCase().includes(term) ||
-      appointment.vehicle.model.toLowerCase().includes(term) ||
-      (appointment.technician && appointment.technician.toLowerCase().includes(term));
+  const debouncedSearch = useDebounce(watchFilters.search || '', 300);
 
-    const matchesStatus = watchFilters.status === 'all' || appointment.status === watchFilters.status;
+  const filteredAppointments = useMemo(() => {
+    return appointments.filter(appointment => {
+      const term = debouncedSearch.toLowerCase().trim();
+      const matchesSearch = !term ||
+        appointment.id.toLowerCase().includes(term) ||
+        appointment.date.toLowerCase().includes(term) ||
+        appointment.time.toLowerCase().includes(term) ||
+        (appointment.customerName && appointment.customerName.toLowerCase().includes(term)) ||
+        appointment.vehicle.plate.toLowerCase().includes(term) ||
+        appointment.vehicle.model.toLowerCase().includes(term) ||
+        (appointment.technician && appointment.technician.toLowerCase().includes(term));
 
-    return matchesSearch && matchesStatus;
-  });
+      const matchesStatus = watchFilters.status === 'all' || appointment.status === watchFilters.status;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [appointments, debouncedSearch, watchFilters.status]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  const totalPages = Math.ceil(filteredAppointments.length / pageSize);
+
+  const paginatedAppointments = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredAppointments.slice(startIndex, startIndex + pageSize);
+  }, [filteredAppointments, currentPage, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, watchFilters.status]);
+
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      if (currentPage > 3) {
+        pages.push('ellipsis');
+      }
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) {
+        if (i !== 1 && i !== totalPages) {
+          pages.push(i);
+        }
+      }
+      if (currentPage < totalPages - 2) {
+        pages.push('ellipsis');
+      }
+      if (totalPages > 1) {
+        pages.push(totalPages);
+      }
+    }
+    return pages;
+  };
 
   const getStatusBadge = (status: string) => {
     const normalized = (status || '').toLowerCase();
@@ -131,7 +181,16 @@ export function AppointmentTable({
                 <FormControl>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input className="pl-9 w-64" placeholder="Tìm kiếm..." {...field} />
+                    <Input className="pl-9 pr-10 w-64" placeholder="Tìm kiếm..." {...field} />
+                    {field.value && (
+                      <button
+                        type="button"
+                        onClick={() => field.onChange('')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </FormControl>
               </FormItem>
@@ -183,7 +242,7 @@ export function AppointmentTable({
                 </TableCell>
               </TableRow>
             ) : (
-              filteredAppointments.map(appointment => (
+              paginatedAppointments.map(appointment => (
                 <TableRow key={appointment.id}>
                   <TableCell className="font-medium">#{appointment.id}</TableCell>
                   <TableCell>
@@ -263,6 +322,58 @@ export function AppointmentTable({
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Hiển thị {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredAppointments.length)} trong tổng số {filteredAppointments.length} kết quả
+          </div>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage > 1) setCurrentPage(currentPage - 1);
+                  }}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              {getPageNumbers().map((page, index) => (
+                <PaginationItem key={index}>
+                  {page === 'ellipsis' ? (
+                    <PaginationEllipsis />
+                  ) : (
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage(page as number);
+                      }}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  )}
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                  }}
+                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 }

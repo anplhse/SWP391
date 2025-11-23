@@ -608,6 +608,115 @@ class ApiClient {
     });
   }
 
+  async getCustomerPaymentHistory(customerId: number): Promise<Array<{
+    id: number;
+    invoiceNumber: string;
+    orderCode: string;
+    amount: number;
+    status: string;
+    paymentMethod: string;
+    createdAt: string;
+    paidAt: string;
+    transactionRef: string;
+    responseCode: string;
+  }>> {
+    return this.request(`/payments/history/customers/${customerId}`, {
+      method: 'GET',
+    });
+  }
+
+  // Feedback APIs
+  async getFeedbackTags(id?: number): Promise<Array<{
+    id: number;
+    content: string;
+    ratingTarget: number;
+  }>> {
+    const endpoint = id ? `/feedbacks/tags?id=${id}` : '/feedbacks/tags';
+    return this.request(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  async getFeedbackByBookingId(bookingId: number): Promise<{
+    id: number;
+    rating: number;
+    comment: string;
+    tags: Array<{
+      id: number;
+      content: string;
+      ratingTarget: number;
+    }>;
+    bookingId: number;
+    customerId: number;
+    customerName: string;
+    createdAt: string;
+  } | null> {
+    return this.request(`/feedbacks/booking/${bookingId}`, {
+      method: 'GET',
+    });
+  }
+
+  async getFeedbackByCustomerId(customerId: number): Promise<Array<{
+    id: number;
+    rating: number;
+    comment: string;
+    tags: Array<{
+      id: number;
+      content: string;
+      ratingTarget: number;
+    }>;
+    bookingId: number;
+    customerId: number;
+    customerName: string;
+    createdAt: string;
+  }>> {
+    return this.request(`/feedbacks/user/${customerId}`, {
+      method: 'GET',
+    });
+  }
+
+  async createFeedback(payload: {
+    rating: number;
+    comment: string;
+    tagIds?: number[];
+    bookingId: number;
+  }): Promise<{
+    id: number;
+    rating: number;
+    comment: string;
+    tags: Array<{
+      id: number;
+      content: string;
+      ratingTarget: number;
+    }>;
+    bookingId: number;
+    customerId: number;
+    customerName: string;
+    createdAt: string;
+  }> {
+    // Chỉ gửi tagIds nếu có tags được chọn
+    const requestPayload: {
+      rating: number;
+      comment: string;
+      bookingId: number;
+      tagIds?: number[];
+    } = {
+      rating: payload.rating,
+      comment: payload.comment,
+      bookingId: payload.bookingId,
+    };
+
+    // Chỉ thêm tagIds nếu có tags được chọn
+    if (payload.tagIds && payload.tagIds.length > 0) {
+      requestPayload.tagIds = payload.tagIds;
+    }
+
+    return this.request('/feedbacks', {
+      method: 'POST',
+      body: JSON.stringify(requestPayload),
+    });
+  }
+
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

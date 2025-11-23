@@ -1,15 +1,20 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
+import { useDebounce } from '@/hooks/useDebounce';
 import { apiClient } from '@/lib/api';
 import { showApiErrorToast } from '@/lib/responseHandler';
-import { Eye, Plus, Search } from 'lucide-react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Eye, Plus, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 type VehicleModel = {
   id: number;
@@ -31,8 +36,20 @@ export default function VehicleModelsPage() {
   const { toast } = useToast();
   const [models, setModels] = useState<VehicleModel[]>([]);
   const [modelEnumValues, setModelEnumValues] = useState<string[]>([]);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+
+  const filterSchema = z.object({
+    search: z.string().optional(),
+    status: z.enum(['ALL', 'ACTIVE', 'INACTIVE']).optional(),
+  });
+  type FilterForm = z.infer<typeof filterSchema>;
+
+  const filterForm = useForm<FilterForm>({
+    resolver: zodResolver(filterSchema),
+    defaultValues: { search: '', status: 'ALL' }
+  });
+
+  const watchFilters = filterForm.watch();
+  const debouncedSearch = useDebounce(watchFilters.search || '', 300);
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -89,16 +106,17 @@ export default function VehicleModelsPage() {
   }, []);
 
   const filtered = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
+    const keyword = debouncedSearch.trim().toLowerCase();
+    const currentStatusFilter = watchFilters.status || 'ALL';
     return models.filter(m =>
-      (statusFilter === 'ALL' ? true : m.status === statusFilter) &&
+      (currentStatusFilter === 'ALL' ? true : m.status === currentStatusFilter) &&
       (
         !keyword ||
         m.brandName.toLowerCase().includes(keyword) ||
         m.modelName.toLowerCase().includes(keyword)
       )
     );
-  }, [models, search, statusFilter]);
+  }, [models, debouncedSearch, watchFilters.status]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -277,27 +295,67 @@ export default function VehicleModelsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Tìm kiếm model/brand..."
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="pl-10 w-64"
+        <Form {...filterForm}>
+          <form className="flex items-center gap-3">
+            <FormField
+              name="search"
+              control={filterForm.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                      <Input
+                        placeholder="Tìm kiếm model/brand..."
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setPage(1);
+                        }}
+                        className="pl-10 pr-10 w-64"
+                      />
+                      {field.value && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            field.onChange('');
+                            setPage(1);
+                          }}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </FormControl>
+                </FormItem>
+              )}
             />
-          </div>
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as 'ALL' | 'ACTIVE' | 'INACTIVE'); setPage(1); }}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-              <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-              <SelectItem value="INACTIVE">INACTIVE</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+            <FormField
+              name="status"
+              control={filterForm.control}
+              render={({ field }) => (
+                <FormItem>
+                  <Select onValueChange={(v) => {
+                    field.onChange(v);
+                    setPage(1);
+                  }} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-[160px]">
+                        <SelectValue placeholder="Trạng thái" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
+                      <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                      <SelectItem value="INACTIVE">INACTIVE</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+          </form>
+        </Form>
         <div className="flex items-center gap-3">
           <Button onClick={handleAddNew}>
             <Plus className="h-4 w-4 mr-2" />

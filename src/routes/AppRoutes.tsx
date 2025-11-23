@@ -25,6 +25,7 @@ import BookingPage from '@/pages/customer/BookingPage';
 import BookingStatusPage from '@/pages/customer/BookingStatusPage';
 import BookingsAndHistoryPage from '@/pages/customer/BookingsAndHistoryPage';
 import CustomerDashboard from '@/pages/customer/CustomerDashboard';
+import FeedbackHistoryPage from '@/pages/customer/FeedbackHistoryPage';
 import PaymentHistoryPage from '@/pages/customer/PaymentHistoryPage';
 import PaymentResultPage from '@/pages/customer/PaymentResultPage';
 import CustomerVehicleManagementPage from '@/pages/customer/VehicleManagementPage';
@@ -57,35 +58,36 @@ export default function AppRoutes() {
     <BrowserRouter>
       <ScrollToTop>
         <AuthEventListener />
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<Index />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/verify" element={<Verify />} />
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/verify" element={<Verify />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/services" element={<Services />} />
-        <Route path="/solutions" element={<Solutions />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/contact" element={<Contact />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/solutions" element={<Solutions />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/payment-result" element={<PaymentResultPage />} />
 
-        {/* Protected routes with DefaultLayout */}
-        <Route path="/" element={<DefaultLayout />}>
-          {/* Customer routes */}
+          {/* Protected routes with DefaultLayout */}
+          <Route path="/" element={<DefaultLayout />}>
+            {/* Customer routes */}
             <Route path="customer" element={<ProtectedRoute requiredRole="Khách hàng"><CustomerDashboard /></ProtectedRoute>} />
             <Route path="customer/booking" element={<ProtectedRoute requiredRole="Khách hàng"><BookingPage /></ProtectedRoute>} />
             <Route path="customer/booking/confirmation" element={<ProtectedRoute requiredRole="Khách hàng"><BookingConfirmationPage /></ProtectedRoute>} />
             <Route path="customer/bookings" element={<ProtectedRoute requiredRole="Khách hàng"><BookingsAndHistoryPage /></ProtectedRoute>} />
             <Route path="customer/booking-status" element={<ProtectedRoute requiredRole="Khách hàng"><BookingStatusPage /></ProtectedRoute>} />
             <Route path="customer/payment-history" element={<ProtectedRoute requiredRole="Khách hàng"><PaymentHistoryPage /></ProtectedRoute>} />
+            <Route path="customer/feedback-history" element={<ProtectedRoute requiredRole="Khách hàng"><FeedbackHistoryPage /></ProtectedRoute>} />
             <Route path="customer/vehicles" element={<ProtectedRoute requiredRole="Khách hàng"><CustomerVehicleManagementPage /></ProtectedRoute>} />
             <Route path="customer/vehicle/:vehicleId" element={<ProtectedRoute requiredRole="Khách hàng"><VehicleProfilePage /></ProtectedRoute>} />
 
-          {/* Service Center routes */}
+            {/* Service Center routes */}
             <Route path="service/staff" element={<ProtectedRoute requiredRole="Nhân viên"><StaffDashboard /></ProtectedRoute>} />
             <Route path="service/customers" element={<ProtectedRoute requiredRole="Nhân viên"><CustomerManagementPage /></ProtectedRoute>} />
             <Route path="service/vehicles" element={<ProtectedRoute requiredRole="Nhân viên"><StaffVehicleManagementPage /></ProtectedRoute>} />
@@ -102,11 +104,11 @@ export default function AppRoutes() {
 
             <Route path="service/admin" element={<ProtectedRoute requiredRole="Quản trị viên"><AdminDashboard /></ProtectedRoute>} />
             <Route path="service/personnel" element={<ProtectedRoute requiredRole="Quản trị viên"><PersonnelManagementPage /></ProtectedRoute>} />
-        </Route>
+          </Route>
 
-        {/* Catch-all route */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          {/* Catch-all route */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </ScrollToTop>
     </BrowserRouter>
   );

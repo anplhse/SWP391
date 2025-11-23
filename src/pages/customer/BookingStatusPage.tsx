@@ -1,7 +1,8 @@
 import { DataTable } from '@/components/DataTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/lib/api';
 import { bookingApi } from '@/lib/bookingUtils';
@@ -14,7 +15,7 @@ import {
   CreditCard,
   Edit,
   History,
-  Info,
+  Star,
   Trash2,
   Wrench,
   X
@@ -64,25 +65,40 @@ type ApiBooking = {
   };
 };
 
-type PaymentHistory = {
+
+type FeedbackTag = {
   id: number;
-  invoiceNumber: string;
-  orderCode: string;
-  amount: number;
-  status: string;
-  paymentMethod: string;
+  content: string;
+  ratingTarget: number;
+};
+
+type Feedback = {
+  id: number;
+  rating: number;
+  comment: string;
+  tags: Array<{
+    id: number;
+    content: string;
+    ratingTarget: number;
+  }>;
+  bookingId: number;
+  customerId: number;
+  customerName: string;
   createdAt: string;
-  paidAt: string;
-  transactionRef: string;
-  responseCode: string;
 };
 
 export default function BookingStatusPage() {
   const [booking, setBooking] = useState<ApiBooking | null>(null);
-  const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingPaymentHistory, setIsLoadingPaymentHistory] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
+  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
+  const [feedbackTags, setFeedbackTags] = useState<FeedbackTag[]>([]);
+  const [selectedRating, setSelectedRating] = useState<number>(0);
+  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -108,17 +124,20 @@ export default function BookingStatusPage() {
         if (!mounted) return;
         setBooking(data);
 
-        // Load payment history
+        // Load feedback for this booking
+        setIsLoadingFeedback(true);
         try {
-          setIsLoadingPaymentHistory(true);
-          const history = await apiClient.getPaymentHistory(bookingId);
-          if (mounted) setPaymentHistory(history);
+          const feedbackData = await apiClient.getFeedbackByBookingId(bookingId);
+          if (mounted) {
+            setFeedback(feedbackData);
+          }
         } catch (error) {
-          console.error('Failed to load payment history:', error);
-          // Don't show error toast for payment history, just log it
-          if (mounted) setPaymentHistory([]);
+          // Backend xử lý logic, chỉ cần set null nếu có lỗi
+          if (mounted) {
+            setFeedback(null);
+          }
         } finally {
-          if (mounted) setIsLoadingPaymentHistory(false);
+          if (mounted) setIsLoadingFeedback(false);
         }
       } catch (error) {
         console.error('Failed to load booking:', error);
@@ -130,6 +149,21 @@ export default function BookingStatusPage() {
     })();
     return () => { mounted = false; };
   }, [location.state, navigate, toast]);
+
+  // Load feedback tags when dialog opens
+  useEffect(() => {
+    if (isFeedbackDialogOpen) {
+      const loadTags = async () => {
+        try {
+          const tags = await apiClient.getFeedbackTags();
+          setFeedbackTags(tags);
+        } catch (error) {
+          console.error('Failed to load feedback tags:', error);
+        }
+      };
+      loadTags();
+    }
+  }, [isFeedbackDialogOpen]);
 
   const getStatusInfo = useCallback((status: string) => {
     const normalized = (status || '').toUpperCase();
@@ -267,6 +301,66 @@ export default function BookingStatusPage() {
     }
   }, [booking, toast]);
 
+  const handleOpenFeedbackDialog = useCallback(() => {
+    setIsFeedbackDialogOpen(true);
+    setSelectedRating(0);
+    setSelectedTags([]);
+    setFeedbackComment('');
+  }, []);
+
+  const handleToggleTag = useCallback((tagId: number) => {
+    setSelectedTags(prev =>
+      prev.includes(tagId)
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId]
+    );
+  }, []);
+
+  const handleSubmitFeedback = useCallback(async () => {
+    if (!booking || !selectedRating) {
+      toast({
+        title: 'Lỗi',
+        description: 'Vui lòng chọn đánh giá sao.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSubmittingFeedback(true);
+    try {
+      const newFeedback = await apiClient.createFeedback({
+        rating: selectedRating,
+        comment: feedbackComment,
+        tagIds: selectedTags.length > 0 ? selectedTags : undefined,
+        bookingId: booking.id,
+      });
+
+      // Reload feedback after successful submission
+      const feedbackData = await apiClient.getFeedbackByBookingId(booking.id);
+      setFeedback(feedbackData);
+
+      toast({
+        title: 'Thành công',
+        description: 'Cảm ơn bạn đã đánh giá dịch vụ!',
+      });
+
+      setIsFeedbackDialogOpen(false);
+      setSelectedRating(0);
+      setSelectedTags([]);
+      setFeedbackComment('');
+    } catch (error) {
+      console.error('Failed to submit feedback:', error);
+      showApiErrorToast(error, toast, 'Không thể gửi đánh giá. Vui lòng thử lại.');
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  }, [booking, selectedRating, feedbackComment, selectedTags, toast]);
+
+  const filteredTags = useMemo(() => {
+    if (!selectedRating) return [];
+    return feedbackTags.filter(tag => tag.ratingTarget === selectedRating);
+  }, [feedbackTags, selectedRating]);
+
   const bookingInfoColumns: ColumnDef<{ label: string; value: string | React.ReactNode }>[] = useMemo(
     () => [
       {
@@ -320,63 +414,6 @@ export default function BookingStatusPage() {
     []
   );
 
-  const paymentHistoryColumns: ColumnDef<PaymentHistory>[] = useMemo(() => [
-    {
-      accessorKey: 'orderCode',
-      header: 'Mã đơn hàng',
-      cell: ({ row }) => <span className="font-mono font-medium">{row.original.orderCode}</span>,
-    },
-    {
-      accessorKey: 'invoiceNumber',
-      header: 'Số hóa đơn',
-      cell: ({ row }) => <span className="font-mono">{row.original.invoiceNumber}</span>,
-    },
-    {
-      accessorKey: 'amount',
-      header: 'Số tiền',
-      cell: ({ row }) => (
-        <span className="font-semibold text-green-600">
-          {formatPrice(row.original.amount)}
-        </span>
-      ),
-    },
-    {
-      accessorKey: 'paymentMethod',
-      header: 'Phương thức',
-      cell: ({ row }) => (
-        <Badge variant="outline">{row.original.paymentMethod}</Badge>
-      ),
-    },
-    {
-      accessorKey: 'status',
-      header: 'Trạng thái',
-      cell: ({ row }) => {
-        const status = row.original.status;
-        return (
-          <Badge
-            variant={status === 'SUCCESSFUL' ? 'default' : 'secondary'}
-            className={status === 'SUCCESSFUL' ? 'bg-green-600 hover:bg-green-700' : ''}
-          >
-            {status === 'SUCCESSFUL' ? 'Thành công' : status}
-          </Badge>
-        );
-      },
-    },
-    {
-      accessorKey: 'transactionRef',
-      header: 'Mã giao dịch',
-      cell: ({ row }) => (
-        <span className="font-mono text-sm">{row.original.transactionRef || '—'}</span>
-      ),
-    },
-    {
-      accessorKey: 'paidAt',
-      header: 'Thời gian thanh toán',
-      cell: ({ row }) => (
-        <span>{new Date(row.original.paidAt).toLocaleString('vi-VN')}</span>
-      ),
-    },
-  ], [formatPrice]);
 
   const invoiceLinesColumns: ColumnDef<{
     id: number;
@@ -466,152 +503,254 @@ export default function BookingStatusPage() {
         </p>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="info" className="w-full">
-        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
-          <TabsTrigger value="info" className="flex items-center gap-2">
-            <Info className="w-4 h-4" />
-            Thông tin
-          </TabsTrigger>
-          <TabsTrigger value="payment-history" className="flex items-center gap-2">
-            <History className="w-4 h-4" />
-            Lịch sử thanh toán
-          </TabsTrigger>
-        </TabsList>
+      {/* Content */}
+      <div className="space-y-6">
+        {/* Booking Information Table */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Thông tin lịch hẹn</h2>
+          <DataTable columns={bookingInfoColumns} data={bookingInfoData} />
+        </div>
 
-        {/* Tab: Thông tin */}
-        <TabsContent value="info" className="space-y-6 mt-6">
-          {/* Booking Information Table */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Thông tin lịch hẹn</h2>
-            <DataTable columns={bookingInfoColumns} data={bookingInfoData} />
-          </div>
+        {/* Services Table */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Dịch vụ đã chọn</h2>
+          <DataTable
+            columns={servicesColumns}
+            data={(booking.catalogDetails || []).map(s => ({
+              id: s.id,
+              serviceName: s.serviceName,
+              description: s.description
+            }))}
+          />
+        </div>
 
-          {/* Services Table */}
+        {/* Invoice Information */}
+        {booking.invoice && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Dịch vụ đã chọn</h2>
+            <h2 className="text-xl font-semibold">Thông tin hóa đơn</h2>
             <DataTable
-              columns={servicesColumns}
-              data={(booking.catalogDetails || []).map(s => ({
-                id: s.id,
-                serviceName: s.serviceName,
-                description: s.description
-              }))}
+              columns={bookingInfoColumns}
+              data={[
+                { label: 'Số hóa đơn', value: <span className="font-mono font-medium">{booking.invoice.invoiceNumber}</span> },
+                {
+                  label: 'Trạng thái',
+                  value: (
+                    <Badge
+                      variant={booking.invoice.status === 'PAID' ? 'default' : 'secondary'}
+                      className={booking.invoice.status === 'PAID' ? 'bg-green-600 hover:bg-green-700' : ''}
+                    >
+                      {booking.invoice.status === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                    </Badge>
+                  ),
+                },
+                { label: 'Ngày tạo', value: new Date(booking.invoice.issueDate).toLocaleString('vi-VN') },
+                { label: 'Hạn thanh toán', value: new Date(booking.invoice.dueDate).toLocaleDateString('vi-VN') },
+                {
+                  label: 'Thời gian thanh toán',
+                  value: booking.invoice.paidAt ? new Date(booking.invoice.paidAt).toLocaleString('vi-VN') : '—',
+                },
+                {
+                  label: 'Tổng tiền',
+                  value: <span className="font-semibold text-green-600">{formatPrice(booking.invoice.totalAmount)}</span>,
+                },
+              ]}
             />
           </div>
+        )}
 
-          {/* Invoice Information */}
-          {booking.invoice && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Thông tin hóa đơn</h2>
-              <DataTable
-                columns={bookingInfoColumns}
-                data={[
-                  { label: 'Số hóa đơn', value: <span className="font-mono font-medium">{booking.invoice.invoiceNumber}</span> },
-                  {
-                    label: 'Trạng thái',
-                    value: (
-                      <Badge
-                        variant={booking.invoice.status === 'PAID' ? 'default' : 'secondary'}
-                        className={booking.invoice.status === 'PAID' ? 'bg-green-600 hover:bg-green-700' : ''}
-                      >
-                        {booking.invoice.status === 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}
-                      </Badge>
-                    ),
-                  },
-                  { label: 'Ngày tạo', value: new Date(booking.invoice.issueDate).toLocaleString('vi-VN') },
-                  { label: 'Hạn thanh toán', value: new Date(booking.invoice.dueDate).toLocaleDateString('vi-VN') },
-                  {
-                    label: 'Thời gian thanh toán',
-                    value: booking.invoice.paidAt ? new Date(booking.invoice.paidAt).toLocaleString('vi-VN') : '—',
-                  },
-                  {
-                    label: 'Tổng tiền',
-                    value: <span className="font-semibold text-green-600">{formatPrice(booking.invoice.totalAmount)}</span>,
-                  },
-                ]}
-              />
-            </div>
-          )}
-
-          {/* Invoice Lines */}
-          {booking.invoice && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Chi tiết hóa đơn</h2>
-              <DataTable
-                columns={invoiceLinesColumns}
-                data={booking.invoice.invoiceLines}
-              />
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            {booking.bookingStatus === 'CONFIRMED' && booking.invoice && (
-              <Button
-                onClick={handlePayment}
-                disabled={isProcessingPayment}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <CreditCard className="w-4 h-4 mr-2" />
-                {isProcessingPayment ? 'Đang xử lý...' : 'Thanh toán'}
-              </Button>
-            )}
-            {['MAINTENANCE_COMPLETE', 'COMPLETED'].includes(booking.bookingStatus) && booking.invoice && booking.invoice.status !== 'PAID' && (
-              <Button
-                onClick={handlePayment}
-                disabled={isProcessingPayment}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <CreditCard className="w-4 h-4 mr-2" />
-                {isProcessingPayment ? 'Đang xử lý...' : 'Thanh toán ngay'}
-              </Button>
-            )}
-            {!['CANCELLED', 'REJECTED', 'COMPLETED', 'MAINTENANCE_COMPLETE'].includes(booking.bookingStatus) && (
-              <>
-                <Button variant="outline" onClick={handleEditBooking}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Chỉnh sửa lịch hẹn
-                </Button>
-                <Button variant="destructive" onClick={handleCancelBooking}>
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Hủy lịch hẹn
-                </Button>
-              </>
-            )}
-            <Button variant="outline" onClick={() => navigate('/customer/bookings')}>
-              <History className="w-4 h-4 mr-2" />
-              Xem lịch sử
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/customer')}>
-              Về trang chủ
-            </Button>
-          </div>
-        </TabsContent>
-
-        {/* Tab: Lịch sử thanh toán */}
-        <TabsContent value="payment-history" className="space-y-6 mt-6">
+        {/* Invoice Lines */}
+        {booking.invoice && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Lịch sử thanh toán</h2>
-            {isLoadingPaymentHistory ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Đang tải lịch sử thanh toán...</p>
+            <h2 className="text-xl font-semibold">Chi tiết hóa đơn</h2>
+            <DataTable
+              columns={invoiceLinesColumns}
+              data={booking.invoice.invoiceLines}
+            />
+          </div>
+        )}
+
+        {/* Feedback Section - chỉ hiển thị khi booking completed */}
+        {['MAINTENANCE_COMPLETE', 'COMPLETED'].includes(booking.bookingStatus) && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Đánh giá dịch vụ</h2>
+            {isLoadingFeedback ? (
+              <div className="border rounded-lg p-6 text-center">
+                <p className="text-muted-foreground">Đang tải đánh giá...</p>
               </div>
-            ) : paymentHistory.length > 0 ? (
-              <DataTable
-                columns={paymentHistoryColumns}
-                data={paymentHistory}
-              />
+            ) : feedback ? (
+              <div className="border rounded-lg p-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <Star
+                        key={rating}
+                        className={`w-5 h-5 ${rating <= feedback.rating
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-gray-300'
+                          }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {new Date(feedback.createdAt).toLocaleString('vi-VN')}
+                  </span>
+                </div>
+                {feedback.comment && (
+                  <p className="text-sm">{feedback.comment}</p>
+                )}
+                {feedback.tags && feedback.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {feedback.tags.map((tag) => (
+                      <Badge key={tag.id} variant="outline">
+                        {tag.content}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
-              <div className="text-center py-12 border rounded-lg">
-                <History className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">Chưa có lịch sử thanh toán</p>
+              <div className="border rounded-lg p-6 text-center space-y-4">
+                <p className="text-muted-foreground">Chia sẻ trải nghiệm của bạn về dịch vụ</p>
+                <Button
+                  onClick={handleOpenFeedbackDialog}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Star className="w-4 h-4 mr-2" />
+                  Đánh giá dịch vụ
+                </Button>
               </div>
             )}
           </div>
-        </TabsContent>
-      </Tabs>
+        )}
+
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+          {booking.bookingStatus === 'CONFIRMED' && booking.invoice && (
+            <Button
+              onClick={handlePayment}
+              disabled={isProcessingPayment}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <CreditCard className="w-4 h-4 mr-2" />
+              {isProcessingPayment ? 'Đang xử lý...' : 'Thanh toán'}
+            </Button>
+          )}
+          {['MAINTENANCE_COMPLETE', 'COMPLETED'].includes(booking.bookingStatus) && booking.invoice && booking.invoice.status !== 'PAID' && (
+            <Button
+              onClick={handlePayment}
+              disabled={isProcessingPayment}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <CreditCard className="w-4 h-4 mr-2" />
+              {isProcessingPayment ? 'Đang xử lý...' : 'Thanh toán ngay'}
+            </Button>
+          )}
+          {!['CANCELLED', 'REJECTED', 'COMPLETED', 'MAINTENANCE_COMPLETE'].includes(booking.bookingStatus) && (
+            <>
+              <Button variant="outline" onClick={handleEditBooking}>
+                <Edit className="w-4 h-4 mr-2" />
+                Chỉnh sửa lịch hẹn
+              </Button>
+              <Button variant="destructive" onClick={handleCancelBooking}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Hủy lịch hẹn
+              </Button>
+            </>
+          )}
+          <Button variant="outline" onClick={() => navigate('/customer/bookings')}>
+            <History className="w-4 h-4 mr-2" />
+            Xem lịch sử
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/customer')}>
+            Về trang chủ
+          </Button>
+        </div>
+      </div>
+
+      {/* Feedback Dialog */}
+      <Dialog open={isFeedbackDialogOpen} onOpenChange={setIsFeedbackDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Đánh giá dịch vụ</DialogTitle>
+            <DialogDescription>
+              Chia sẻ trải nghiệm của bạn về dịch vụ bảo dưỡng
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Rating Stars */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Đánh giá sao *</label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <button
+                    key={rating}
+                    type="button"
+                    onClick={() => setSelectedRating(rating)}
+                    className="focus:outline-none"
+                  >
+                    <Star
+                      className={`w-8 h-8 transition-colors ${rating <= selectedRating
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'text-gray-300 hover:text-yellow-300'
+                        }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tags */}
+            {selectedRating > 0 && filteredTags.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Chọn tags (tùy chọn)</label>
+                <div className="flex flex-wrap gap-2">
+                  {filteredTags.map((tag) => (
+                    <Badge
+                      key={tag.id}
+                      variant={selectedTags.includes(tag.id) ? 'default' : 'outline'}
+                      className="cursor-pointer"
+                      onClick={() => handleToggleTag(tag.id)}
+                    >
+                      {tag.content}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Comment */}
+            <div className="space-y-2">
+              <label htmlFor="feedback-comment" className="text-sm font-medium">
+                Nhận xét (tùy chọn)
+              </label>
+              <Textarea
+                id="feedback-comment"
+                value={feedbackComment}
+                onChange={(e) => setFeedbackComment(e.target.value)}
+                placeholder="Chia sẻ thêm về trải nghiệm của bạn..."
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsFeedbackDialogOpen(false)}
+              disabled={isSubmittingFeedback}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={handleSubmitFeedback}
+              disabled={isSubmittingFeedback || !selectedRating}
+            >
+              {isSubmittingFeedback ? 'Đang gửi...' : 'Gửi đánh giá'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

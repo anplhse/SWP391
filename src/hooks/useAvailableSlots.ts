@@ -15,7 +15,7 @@ export function useAvailableSlots() {
     queryFn: () => bookingApi.getAvailableSlots(),
   });
 
-  const workingHours = workingHoursData?.enumValue || [];
+  const workingHours = useMemo(() => workingHoursData?.enumValue || [], [workingHoursData?.enumValue]);
 
   const availableDates = useMemo(() => {
     if (!slots) return [];
@@ -31,6 +31,8 @@ export function useAvailableSlots() {
     if (!slots) return new Set<string>();
     return new Set(slots.map(slot => slot.date));
   }, [slots]);
+
+  const memoizedSlots = useMemo(() => slots || [], [slots]);
 
   const defaultCalendarMonth = useMemo(() => {
     if (availableDates.length > 0) {
@@ -48,7 +50,7 @@ export function useAvailableSlots() {
 
   return {
     workingHours,
-    slots: slots || [],
+    slots: memoizedSlots,
     availableDates,
     availableDateStrings,
     calendarMonth,

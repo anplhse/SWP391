@@ -1,10 +1,16 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Calendar, Car, Edit, Mail, Phone, Plus, Search, Trash2 } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Calendar, Car, Edit, Mail, Phone, Plus, Search, Trash2, X } from 'lucide-react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 interface Customer {
   id: string;
@@ -37,13 +43,70 @@ export function CustomerTable({
   filters,
   rightAction
 }: CustomerTableProps) {
-  const [searchTerm, setSearchTerm] = useState('');
+  const filterSchema = z.object({
+    search: z.string().optional(),
+  });
+  type FilterForm = z.infer<typeof filterSchema>;
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phone.includes(searchTerm)
-  );
+  const filterForm = useForm<FilterForm>({
+    resolver: zodResolver(filterSchema),
+    defaultValues: { search: '' }
+  });
+
+  const watchFilters = filterForm.watch();
+  const debouncedSearchTerm = useDebounce(watchFilters.search || '', 300);
+
+  const filteredCustomers = useMemo(() => {
+    return customers.filter(customer =>
+      !debouncedSearchTerm.trim() ||
+      customer.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      customer.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      customer.phone.includes(debouncedSearchTerm)
+    );
+  }, [customers, debouncedSearchTerm]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  const totalPages = Math.ceil(filteredCustomers.length / pageSize);
+
+  const paginatedCustomers = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredCustomers.slice(startIndex, startIndex + pageSize);
+  }, [filteredCustomers, currentPage, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
+
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      if (currentPage > 3) {
+        pages.push('ellipsis');
+      }
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) {
+        if (i !== 1 && i !== totalPages) {
+          pages.push(i);
+        }
+      }
+      if (currentPage < totalPages - 2) {
+        pages.push('ellipsis');
+      }
+      if (totalPages > 1) {
+        pages.push(totalPages);
+      }
+    }
+    return pages;
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -64,18 +127,38 @@ export function CustomerTable({
     <div className="space-y-4">
       {/* Search Controls */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Tìm kiếm tài khoản..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-64"
+        <Form {...filterForm}>
+          <form className="flex items-center gap-3">
+            <FormField
+              name="search"
+              control={filterForm.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                      <Input
+                        placeholder="Tìm kiếm tài khoản..."
+                        {...field}
+                        className="pl-10 pr-10 w-64"
+                      />
+                      {field.value && (
+                        <button
+                          type="button"
+                          onClick={() => field.onChange('')}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </FormControl>
+                </FormItem>
+              )}
             />
-          </div>
-          {filters}
-        </div>
+            {filters}
+          </form>
+        </Form>
         {rightAction && <div className="flex items-center gap-3">{rightAction}</div>}
       </div>
 
@@ -102,7 +185,7 @@ export function CustomerTable({
                 </TableCell>
               </TableRow>
             ) : (
-              filteredCustomers.map((customer) => (
+              paginatedCustomers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -166,6 +249,58 @@ export function CustomerTable({
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Hiển thị {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredCustomers.length)} trong tổng số {filteredCustomers.length} kết quả
+          </div>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage > 1) setCurrentPage(currentPage - 1);
+                  }}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              {getPageNumbers().map((page, index) => (
+                <PaginationItem key={index}>
+                  {page === 'ellipsis' ? (
+                    <PaginationEllipsis />
+                  ) : (
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage(page as number);
+                      }}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  )}
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                  }}
+                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 }

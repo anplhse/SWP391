@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useDebounce } from '@/hooks/useDebounce';
 import { authService } from '@/lib/auth';
 import { bookingApi } from '@/lib/bookingUtils';
 import { ColumnDef } from '@tanstack/react-table';
@@ -20,6 +21,10 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 
 type BookingStatus = 'pending' | 'confirmed' | 'paid' | 'in_progress' | 'completed' | 'cancelled' | 'rejected';
 
@@ -42,8 +47,20 @@ export default function BookingsAndHistoryPage() {
   const user = { email: 'customer@example.com', role: 'customer', userType: 'customer' };
 
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
-  const [query, setQuery] = useState('');
-  const [status, setStatus] = useState<'all' | BookingStatus>('all');
+
+  const filterSchema = z.object({
+    query: z.string().optional(),
+    status: z.enum(['all', 'pending', 'confirmed', 'paid', 'in_progress', 'completed', 'cancelled', 'rejected']).optional(),
+  });
+  type FilterForm = z.infer<typeof filterSchema>;
+
+  const filterForm = useForm<FilterForm>({
+    resolver: zodResolver(filterSchema),
+    defaultValues: { query: '', status: 'all' }
+  });
+
+  const watchFilters = filterForm.watch();
+  const debouncedQuery = useDebounce(watchFilters.query || '', 300);
 
   useEffect(() => {
     const loadBookings = async () => {
@@ -93,7 +110,7 @@ export default function BookingsAndHistoryPage() {
 
   const filteredBookings = useMemo(() => {
     return bookings.filter(b => {
-      const matchText = [
+      const matchText = !debouncedQuery.trim() || [
         b.id,
         b.vehicleVin,
         b.vehicleModel,
@@ -103,12 +120,12 @@ export default function BookingsAndHistoryPage() {
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
-        .includes(query.toLowerCase());
+        .includes(debouncedQuery.toLowerCase());
 
-      const matchStatus = status === 'all' ? true : b.status === status;
+      const matchStatus = (watchFilters.status || 'all') === 'all' ? true : b.status === watchFilters.status;
       return matchText && matchStatus;
     });
-  }, [bookings, query, status]);
+  }, [bookings, debouncedQuery, watchFilters.status]);
 
   // Gộp tất cả vào 1 danh sách duy nhất
   const allBookings = filteredBookings;
@@ -211,42 +228,72 @@ export default function BookingsAndHistoryPage() {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div>
-          <Label>Tìm kiếm</Label>
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Booking ID, VIN, Model xe..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
-        </div>
-        <div>
-          <Label>Trạng thái</Label>
-          <Select value={status} onValueChange={(v) => setStatus(v as 'all' | BookingStatus)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Tất cả" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="pending">Chờ xác nhận</SelectItem>
-              <SelectItem value="confirmed">Đã xác nhận</SelectItem>
-              <SelectItem value="paid">Đã thanh toán</SelectItem>
-              <SelectItem value="in_progress">Đang thực hiện</SelectItem>
-              <SelectItem value="completed">Hoàn thành</SelectItem>
-              <SelectItem value="cancelled">Đã hủy</SelectItem>
-              <SelectItem value="rejected">Từ chối</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-end justify-end">
-          <Button variant="destructive" onClick={clearAll}>
-            <Trash2 className="w-4 h-4 mr-2" /> Xóa tất cả
-          </Button>
-        </div>
+      <div className="mb-6">
+        <Form {...filterForm}>
+          <form>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                name="query"
+                control={filterForm.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <Label>Tìm kiếm</Label>
+                    <FormControl>
+                      <div className="relative">
+                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          className="pl-9 pr-10"
+                          placeholder="Booking ID, VIN, Model xe..."
+                          {...field}
+                        />
+                        {field.value && (
+                          <button
+                            type="button"
+                            onClick={() => field.onChange('')}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="status"
+                control={filterForm.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <Label>Trạng thái</Label>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Tất cả" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="pending">Chờ xác nhận</SelectItem>
+                        <SelectItem value="confirmed">Đã xác nhận</SelectItem>
+                        <SelectItem value="paid">Đã thanh toán</SelectItem>
+                        <SelectItem value="in_progress">Đang thực hiện</SelectItem>
+                        <SelectItem value="completed">Hoàn thành</SelectItem>
+                        <SelectItem value="cancelled">Đã hủy</SelectItem>
+                        <SelectItem value="rejected">Từ chối</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+              <div className="flex items-end justify-end">
+                <Button variant="destructive" onClick={clearAll}>
+                  <Trash2 className="w-4 h-4 mr-2" /> Xóa tất cả
+                </Button>
+              </div>
+            </div>
+          </form>
+        </Form>
       </div>
 
       {/* Main Content - Single Table */}

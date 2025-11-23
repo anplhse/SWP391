@@ -44,15 +44,15 @@ type BookingFormData = z.infer<typeof bookingSchema>;
 
 interface BookingFormProps {
   services: Array<{
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  duration: number;
-  compatibleVehicles: string[];
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    duration: number;
+    compatibleVehicles: string[];
     relatedParts: Record<string, string[]>;
-  category?: string;
-  status?: string;
+    category?: string;
+    status?: string;
   }>;
 }
 
@@ -162,7 +162,8 @@ export function BookingForm({ services }: BookingFormProps) {
         form.setValue('notes', booking.notes);
       }
     }
-  }, [location.state, form, setVinData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.preselectVin, location.state?.preselectVehicle, location.state?.editMode, location.state?.existingBooking, setVinData]);
 
   // Pre-fill form when vinData loads
   useEffect(() => {
@@ -171,7 +172,8 @@ export function BookingForm({ services }: BookingFormProps) {
       form.setValue('plate', vinData.plateNumber || '');
       form.setValue('model', vinData.modelName || '');
     }
-  }, [vinData, form, location.state]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vinData, location.state?.preselectVin, location.state?.editMode]);
 
   // Clear time slot if not available
   useEffect(() => {
@@ -179,7 +181,8 @@ export function BookingForm({ services }: BookingFormProps) {
     if (currentTimeSlot && !availableTimeSlots.includes(currentTimeSlot)) {
       form.setValue('selectedTimeSlot', '');
     }
-  }, [availableTimeSlots, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableTimeSlots]);
 
   const handleVinLookup = async () => {
     const vin = form.getValues('vin');
@@ -279,8 +282,8 @@ export function BookingForm({ services }: BookingFormProps) {
         });
 
         await refetchSlots();
-          if (data.selectedDate) {
-            await loadTimeSlots(data.selectedDate);
+        if (data.selectedDate) {
+          await loadTimeSlots(data.selectedDate);
         }
 
         if (created?.id) {
@@ -290,37 +293,37 @@ export function BookingForm({ services }: BookingFormProps) {
         const totalPrice = selectedServicesList.reduce((sum, s) => sum + s.price, 0);
         const totalDuration = selectedServicesList.reduce((sum, s) => sum + s.duration, 0);
 
-      const bookingData = {
-        id: `BK${Date.now()}`,
-        vehicle: {
-          vin: data.vin,
-          model: vinData?.modelName || 'N/A'
-        },
+        const bookingData = {
+          id: `BK${Date.now()}`,
+          vehicle: {
+            vin: data.vin,
+            model: vinData?.modelName || 'N/A'
+          },
           services: selectedServicesList.map(s => ({
             id: s.id,
             name: s.name,
             description: s.description,
             price: s.price,
             duration: s.duration
-        })),
-        date: dateString,
-        time: data.selectedTimeSlot,
-        notes: data.notes || '',
-        totalAmount: totalPrice,
-        estimatedDuration: totalDuration,
-        status: 'pending' as const,
-        createdAt: new Date().toISOString()
-      };
+          })),
+          date: dateString,
+          time: data.selectedTimeSlot,
+          notes: data.notes || '',
+          totalAmount: totalPrice,
+          estimatedDuration: totalDuration,
+          status: 'pending' as const,
+          createdAt: new Date().toISOString()
+        };
 
-      localStorage.setItem('latestBooking', JSON.stringify(bookingData));
+        localStorage.setItem('latestBooking', JSON.stringify(bookingData));
         clearVinData();
 
-      toast({
-        title: 'Đặt lịch thành công!',
-        description: 'Đang chuyển đến trang xác nhận...'
-      });
+        toast({
+          title: 'Đặt lịch thành công!',
+          description: 'Đang chuyển đến trang xác nhận...'
+        });
 
-      const latestId = localStorage.getItem('latestBookingId');
+        const latestId = localStorage.getItem('latestBookingId');
         navigate('/customer/booking/confirmation', {
           state: latestId ? { bookingId: Number(latestId) } : { bookingData }
         });
@@ -495,12 +498,12 @@ export function BookingForm({ services }: BookingFormProps) {
                   <FormItem>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                          <Input
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Tìm kiếm dịch vụ..."
-                            className="w-64"
-                          />
+                        <Input
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Tìm kiếm dịch vụ..."
+                          className="w-64"
+                        />
                         <div className="flex items-center gap-4">
                           {selectedServices.length > 0 && (
                             <Badge variant="secondary" className="text-sm">
@@ -546,13 +549,13 @@ export function BookingForm({ services }: BookingFormProps) {
                                 <div className="flex items-center justify-center">
                                   <div
                                     className={cn(
-                                    "w-4 h-4 border-2 rounded flex items-center justify-center transition-colors cursor-pointer",
+                                      "w-4 h-4 border-2 rounded flex items-center justify-center transition-colors cursor-pointer",
                                       allCurrentPageSelected
                                         ? "bg-primary border-primary text-primary-foreground"
                                         : someCurrentPageSelected
                                           ? "bg-primary/50 border-primary text-primary-foreground"
                                           : "border-muted-foreground"
-                                  )}
+                                    )}
                                     onClick={allCurrentPageSelected ? handleDeselectAll : handleSelectAll}
                                   >
                                     {allCurrentPageSelected && (
@@ -589,7 +592,7 @@ export function BookingForm({ services }: BookingFormProps) {
                                     <div className="flex items-center justify-center">
                                       <div
                                         className={cn(
-                                        "w-4 h-4 border-2 rounded flex items-center justify-center transition-colors",
+                                          "w-4 h-4 border-2 rounded flex items-center justify-center transition-colors",
                                           isSelected
                                             ? "bg-primary border-primary text-primary-foreground"
                                             : "border-muted-foreground"
@@ -626,18 +629,18 @@ export function BookingForm({ services }: BookingFormProps) {
                                       {!modelParts || modelParts.length === 0 ? (
                                         <span className="text-xs text-muted-foreground">Không có phụ tùng</span>
                                       ) : (
-                                          <>
-                                            {modelParts.slice(0, 2).map((part) => (
-                                              <Badge key={part} variant="secondary" className="text-xs">
-                                                {part}
-                                              </Badge>
-                                            ))}
-                                            {modelParts.length > 2 && (
-                                              <span className="text-xs text-muted-foreground">
-                                                +{modelParts.length - 2} khác
-                                              </span>
-                                            )}
-                                          </>
+                                        <>
+                                          {modelParts.slice(0, 2).map((part) => (
+                                            <Badge key={part} variant="secondary" className="text-xs">
+                                              {part}
+                                            </Badge>
+                                          ))}
+                                          {modelParts.length > 2 && (
+                                            <span className="text-xs text-muted-foreground">
+                                              +{modelParts.length - 2} khác
+                                            </span>
+                                          )}
+                                        </>
                                       )}
                                     </div>
                                   </TableCell>
@@ -700,6 +703,9 @@ export function BookingForm({ services }: BookingFormProps) {
                               month={calendarMonth || field.value || defaultCalendarMonth}
                               onMonthChange={setCalendarMonth}
                               defaultMonth={defaultCalendarMonth}
+                              classNames={{
+                                day_today: "", // Bỏ highlight ngày hiện tại
+                              }}
                               modifiersClassNames={{}}
                               disabled={(date) => {
                                 const year = date.getFullYear();
@@ -707,10 +713,7 @@ export function BookingForm({ services }: BookingFormProps) {
                                 const day = String(date.getDate()).padStart(2, '0');
                                 const dateStr = `${year}-${month}-${day}`;
 
-                                const today = new Date();
-                                const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
-                                if (dateStr < todayStr) return true;
+                                // Chỉ hiển thị các ngày có trong availableDateStrings (API đã xử lý logic)
                                 return !availableDateStrings.has(dateStr);
                               }}
                             />

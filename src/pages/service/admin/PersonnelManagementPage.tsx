@@ -14,7 +14,7 @@ import { apiClient } from '@/lib/api';
 import { bookingApi } from '@/lib/bookingUtils';
 import { showApiErrorToast } from '@/lib/responseHandler';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, MapPin, Phone, Plus, Search } from 'lucide-react';
+import { Mail, MapPin, Phone, Plus, Search, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -90,9 +90,20 @@ export default function PersonnelManagementPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [topPerformance, setTopPerformance] = useState<TopPerformance[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const filterSchema = z.object({
+    search: z.string().optional(),
+    role: z.string().optional(),
+    status: z.string().optional(),
+  });
+  type FilterForm = z.infer<typeof filterSchema>;
+
+  const filterForm = useForm<FilterForm>({
+    resolver: zodResolver(filterSchema),
+    defaultValues: { search: '', role: 'all', status: 'all' }
+  });
+
+  const watchFilters = filterForm.watch();
+  const debouncedSearchTerm = useDebounce(watchFilters.search || '', 300);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const { toast } = useToast();
@@ -269,17 +280,19 @@ export default function PersonnelManagementPage() {
     }
   };
 
-  const filteredEmployees = employees.filter(employee => {
-    const matchesSearch =
-      employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.phone.includes(searchTerm);
+  const filteredEmployees = useMemo(() => {
+    return employees.filter(employee => {
+      const matchesSearch = !debouncedSearchTerm.trim() ||
+        employee.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        employee.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        employee.phone.includes(debouncedSearchTerm);
 
-    const matchesRole = roleFilter === 'all' || employee.role === roleFilter;
-    const matchesStatus = statusFilter === 'all' || String(employee.status).toLowerCase() === statusFilter;
+      const matchesRole = (watchFilters.role || 'all') === 'all' || employee.role === watchFilters.role;
+      const matchesStatus = (watchFilters.status || 'all') === 'all' || String(employee.status).toLowerCase() === watchFilters.status;
 
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [employees, debouncedSearchTerm, watchFilters.role, watchFilters.status]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -419,39 +432,79 @@ export default function PersonnelManagementPage() {
           </CardContent>
         </Card>
 
-        <div className="flex gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Tìm kiếm nhân viên..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+        <Form {...filterForm}>
+          <form className="flex gap-4">
+            <FormField
+              name="search"
+              control={filterForm.control}
+              render={({ field }) => (
+                <FormItem className="flex-1">
+                  <FormControl>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                      <Input
+                        placeholder="Tìm kiếm nhân viên..."
+                        {...field}
+                        className="pl-10 pr-10"
+                      />
+                      {field.value && (
+                        <button
+                          type="button"
+                          onClick={() => field.onChange('')}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </FormControl>
+                </FormItem>
+              )}
             />
-          </div>
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Lọc theo vai trò" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="Quản trị viên">Quản lý</SelectItem>
-              <SelectItem value="Nhân viên">Nhân viên</SelectItem>
-              <SelectItem value="Kỹ thuật viên">Kỹ thuật</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Lọc theo trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="active">Hoạt động</SelectItem>
-              <SelectItem value="inactive">Không hoạt động</SelectItem>
-              <SelectItem value="on_leave">Nghỉ phép</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+            <FormField
+              name="role"
+              control={filterForm.control}
+              render={({ field }) => (
+                <FormItem>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Lọc theo vai trò" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="Quản trị viên">Quản lý</SelectItem>
+                      <SelectItem value="Nhân viên">Nhân viên</SelectItem>
+                      <SelectItem value="Kỹ thuật viên">Kỹ thuật</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="status"
+              control={filterForm.control}
+              render={({ field }) => (
+                <FormItem>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Lọc theo trạng thái" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="active">Hoạt động</SelectItem>
+                      <SelectItem value="inactive">Không hoạt động</SelectItem>
+                      <SelectItem value="on_leave">Nghỉ phép</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+          </form>
+        </Form>
 
         <Tabs defaultValue="employees" className="space-y-4">
           <TabsList>

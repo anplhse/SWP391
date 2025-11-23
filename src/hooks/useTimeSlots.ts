@@ -42,14 +42,38 @@ export function useTimeSlots(
     [workingHours, slots, hourStringToNumber]
   );
 
-  // Auto-load time slots when date changes
+  // Auto-load time slots when date, workingHours, or slots change
   useEffect(() => {
     if (selectedDate) {
-      loadTimeSlots(selectedDate);
+      if (!workingHours.length) {
+        setAvailableTimeSlots([]);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      const dateKey = format(selectedDate, 'yyyy-MM-dd');
+
+      const daySlot = slots.find(s => s.date === dateKey);
+      const bookedHours = daySlot?.bookedHours || [];
+      const bookedHoursSet = new Set(bookedHours);
+
+      const available: string[] = [];
+      for (const hour of workingHours) {
+        const hourNum = parseInt(hour.split(':')[0], 10);
+        if (bookedHoursSet.has(hourNum)) {
+          continue;
+        }
+        available.push(hour);
+      }
+
+      setAvailableTimeSlots(available);
+      setIsLoading(false);
     } else {
       setAvailableTimeSlots([]);
     }
-  }, [selectedDate, loadTimeSlots]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, workingHours, slots]);
 
   return {
     availableTimeSlots,
